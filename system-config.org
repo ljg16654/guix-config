@@ -1,5 +1,7 @@
 #+title: System configuration
 
+* base configuration
+
 #+begin_src scheme :tangle /etc/config.scm
 (use-modules (gnu))
 (use-modules (gnu) 

@@ -6,35 +6,35 @@
 :header-args: :tangle ~/.Xmodmap
 :END:
 
-** semicolon as mode_switch
+** dvorak
 
-The idea is from https://oremacs.com/2015/02/14/semi-xmodmap/
-
-#+begin_src fundamental
-keycode  47 = Mode_switch Mode_switch Mode_switch
-#+end_src
-
-*** put control at the right position
+** put control at the right position
 
 #+begin_src fundamental
 keycode  37 = Control_L NoSymbol Control_L
 #+end_src
 
-*** use right control as hyper
+** use right control as hyper
 
 #+begin_src fundamental
 keycode 105 = Hyper_R
 #+end_src
 
-*** put esc to the left of 1
+** semicolon as mode_switch
+:PROPERTIES:
+:header-args: :tangle nil
+:END:
+
+ The idea is from https://oremacs.com/2015/02/14/semi-xmodmap/
 
 #+begin_src fundamental
-keycode  49 = Escape Escape
+keycode  47 = Mode_switch Mode_switch Mode_switch
 #+end_src
 
 *** for {1-9} ∪ {0}, mode_switch acts as shift
 
 #+begin_src fundamental
+keycode  49 = Escape Escape
 keycode  10 = 1 exclam exclam U2081
 keycode  11 = 2 at at U2082
 keycode  12 = 3 numbersign numbersign U2083
@@ -78,7 +78,7 @@ keycode  57 = n N U03BD U039D
 keycode  58 = m M U03BC U039C
 #+end_src
 
-*** hyper key, reset modifiers and locks
+** hyper key, reset modifiers and locks
 
 #+begin_src fundamental
 clear control
@@ -136,21 +136,15 @@ window:
 
 ** colors and opacity
 
-*** TODO dark mode
-
-*** TODO light mode
-
+*** dark mode 
 #+begin_src yaml
-background_opacity: 1.0
+background_opacity: 0.8
 
-colors:
+colors: 
   primary:
     # dark
     background: '#000000'
     foreground: '#eeeedd'
-    # light
-    background: '#ffffff'
-    foreground: '#000000'
   normal:
     black: '#000000'
     red: '#ff8059'
@@ -162,7 +156,6 @@ colors:
     white: '#eeeedd'    
 
 #+end_src
-
 * mail
 ** offlineimap
 :PROPERTIES:
@@ -233,7 +226,7 @@ proxy = HTTP:127.0.0.1:7890
 # sync mail periodically in minutes
 autorefresh = 5
 quick = 10
-postsynchook = mu index --maildir ~/Maildir
+# postsynchook = mu index --maildir ~/Maildir
 
 [Repository LocalUMich]
 type = Maildir
@@ -255,13 +248,26 @@ sslcacertfile = /etc/ssl/certs/ca-certificates.crt
 :header-args: :tangle ~/.config/compton/compton.conf
 :END:
 
-** TODO light mode
+** dim unfocused window
 
-#+begin_src conf
-opacity-rule = [ "80:class_g = 'qutebrowser'"];
+#+begin_src conf :tangle nil
+inactive-dim = 0.1;
 #+end_src
 
-** TODO dark mode
+** window transparency
+
+#+begin_src conf
+opacity-rule = [ "80:name = 'sketch'" ];
+#+end_src
+
+** TODO blur
+
+#+begin_src conf :tangle nil
+blur-method = "dual_kawase";
+blur-strength = 6;
+blur-background = true;
+blur-kern = "7x7box";
+#+end_src
 
 * qutebrowser
 :PROPERTIES:
@@ -278,9 +284,15 @@ For documentation, see
 config.load_autoconfig()
 #+end_src
 
-** user agency, js and image rendering
+** disable continuous scrolling
 
 #+begin_src python
+c.scrolling.smooth = False
+#+end_src
+
+** user agency, js and image rendering
+
+#+begin_src python 
 config.set('content.headers.user_agent', 'Mozilla/5.0 ({os_info}) AppleWebKit/{webkit_version} (KHTML, like Gecko) {upstream_browser_key}/{upstream_browser_version} Safari/{webkit_version}', 'https://web.whatsapp.com/')
 
 config.set('content.headers.user_agent', 'Mozilla/5.0 ({os_info}; rv:71.0) Gecko/20100101 Firefox/71.0', 'https://accounts.google.com/*')
@@ -325,18 +337,18 @@ c.content.proxy = 'http://127.0.0.1:7890'
 
 #+begin_src python
 c.zoom.default = '225%'
-c.zoom.levels = ["50%", "100%", "150%", "200%", "225%", "250%", "300%"]
+c.zoom.levels = ["50%", "100%", "150%", "200%", "225%", "250%", "300%", "350%"]
 #+end_src
 
 ** dealing with sessions and windows
 
 #+begin_src python
-c.tabs.tabs_are_windows = True
+c.tabs.tabs_are_windows = False
 c.tabs.last_close = "ignore"
 
-c.auto_save.session = False
+c.auto_save.session = True
 c.scrolling.smooth = True
-c.session.lazy_restore = False
+c.session.lazy_restore = True
 c.content.autoplay = False
 #+end_src
 
@@ -690,9 +702,19 @@ c.fonts.default_size = "13pt"
 c.fonts.web.family.cursive = "Victor Mono"
 c.fonts.web.family.fantasy= "Victor Mono"
 c.fonts.web.family.fixed = "Victor Mono"
-c.fonts.web.family.sans_serif = "Iosevka"
-c.fonts.web.family.serif = "Iosevka"
-c.fonts.web.family.standard = "Iosevka"
+c.fonts.web.family.sans_serif = "Victor Mono"
+c.fonts.web.family.serif = "Victor Mono"
+c.fonts.web.family.standard = "Victor Mono"
+#+end_src
+
+** keybindings
+
+#+begin_src python
+config.bind('wo', 'window-only')
+config.bind(',r', 'restart')
+config.bind(',d', 'set colors.webpage.darkmode.enabled true')
+config.bind(',l', 'set colors.webpage.darkmode.enabled false')
+config.bind('tf', 'fullscreen')
 #+end_src
 
 ** TODO integration with org roam capture
@@ -707,10 +729,96 @@ config.bind("wo", "window-only", mode="normal")
 #+end_src
 
 * stumpwm
+:PROPERTIES:
+:header-args: :tangle ~/.stumpwm.d/init.lisp
+:END:
 
 ** start swank server
 
+#+begin_src lisp
+(load "~/.emacs.d/straight/repos/slime/swank-loader.lisp")
+(swank-loader:init)
+(defcommand swank () ()
+    (swank:create-server :port 4005
+                       :style swank:*communication-style*
+                       :dont-close t)
+  (echo-string (current-screen)
+	       "Starting swank. M-x slime-connect RET RET, then (in-package stumpwm)."))
+(swank)
+#+end_src
+
 ** raise-or-run
+
+#+begin_src lisp
+
+(defcommand emacs () ()
+  "Start emacs unless it is already running, in which case focus it.
+Do not jump across groups."
+  (run-or-raise "emacs" '(:class "Emacs") nil))
+(defcommand qutebrowser () ()
+  "Start qutebrowser unless it is already running, in which case focus it.
+Do not jump across groups."
+  (run-or-raise "qutebrowser" '(:class "qutebrowser") nil))
+(defcommand alacritty () ()
+  "Start alacritty unless it is already running, in which case focus it.
+Do not jump across groups."
+  (run-or-raise "alacritty" '(:class "Alacritty") nil))
+
+(define-key *top-map* (kbd "s-q") "qutebrowser")
+(define-key *top-map* (kbd "s-e") "emacs")
+(define-key *top-map* (kbd "s-a") "alacritty")
+#+end_src
+
+* xmobar
+:PROPERTIES:
+:header-args: :tangle ~/.config/xmobar/xmobarrc
+:END:
+
+#+begin_src haskell
+Config { font = "xft:victormono-12"
+  , -- font = "-misc-fixed-*-*-*-*-30-*-*-*-*-*-*-*"
+       , additionalFonts = []
+       , borderColor = "black"
+       , border = TopB
+       , bgColor = "black"
+       , fgColor = "grey"
+       , alpha = 100
+       , position = Top
+       , textOffset = -1
+       , iconOffset = -1
+       , lowerOnStart = True
+       , pickBroadest = False
+       , persistent = False
+       , hideOnStart = False
+       , iconRoot = "."
+       , allDesktops = True
+       , overrideRedirect = True
+       , commands = [ Run Network "wlp0s20f3" ["-L","0","-H","32",
+                                          "--normal","green","--high","red"] 10
+                    , Run Cpu ["-L","3","-H","50",
+                               "--normal","green","--high","red"] 10
+                    , Run Memory ["-t","Mem: <usedratio>%"] 10
+                    -- , Run Swap [] 10
+                    , Run Com "uname" ["-s","-r"] "" 36000
+                    , Run Date "%a %b %_d %Y %H:%M:%S" "date" 10
+                    , Run StdinReader
+                    , Run Battery [
+	                "-t", "<acstatus>: <left>% - <timeleft>",
+	                "--",
+	                --"-c", "charge_full",
+	                "-O", "AC",
+	                "-o", "Bat",
+	                "-h", "green",
+	                "-l", "red"
+                        ] 10
+                    ]
+       , sepChar = "%"
+       , alignSep = "}{"
+       , template = "%StdinReader% }{ %battery% | %cpu% | %memory% | %wlp0s20f3% |\
+                    \ <fc=#ee9a00>%date%</fc>| %uname%"
+       }
+#+end_src
+
 * password management
 
 ** gpg agent
@@ -722,4 +830,169 @@ config.bind("wo", "window-only", mode="normal")
 
 #+begin_src conf
 pinentry-program /run/current-system/profile/bin/pinentry-gtk-2
+#+end_src
+
+* nyxt
+:PROPERTIES:
+:header-args: :tangle nil
+:END:
+
+** swank server
+
+#+begin_src lisp
+(load "~/.emacs.d/straight/repos/slime/swank-loader.lisp")
+(swank-loader:init)
+(swank:create-server
+ :port 5678
+ :style swank:*communication-style*
+ :dont-close t)
+#+end_src
+
+** proxy
+
+#+begin_src lisp
+(define-configuration nyxt/proxy-mode:proxy-mode
+  ((nyxt/proxy-mode:proxy (make-instance 'proxy
+                                         :url (quri:uri "http://127.0.0.1:7890")
+                                         :allowlist '("localhost" "localhost:8080")
+                                         :proxied-downloads-p t))))
+
+(define-configuration web-buffer
+  ((default-modes (append '(proxy-mode) %slot-default%))))
+#+end_src
+
+** zoom ratio
+
+related:
++ https://github.com/atlas-engineer/nyxt/issues/151
+
+** mode-line rendering
+
+See [[https://github.com/atlas-engineer/nyxt/issues/1449][related issue]].
+
+#+begin_src lisp :tangle nil
+(define-configuration status-buffer ((height 80)))
+(define-configuration window
+  ((message-buffer-height 50)))
+#+end_src
+
+* math latex template
+:PROPERTIES:
+:header-args: :tangle ~/org-roam/math/math-setup.org
+:END:
+
+#+begin_src org
+#+latex_header:\usepackage[margin=2.5cm]{geometry}
+#+latex_header:\usepackage{amsthm}
+#+latex_header:\newtheorem{theorem}{Theorem}[section]
+#+latex_header:\newtheorem{definition}{Definition}
+#+latex_header:\newtheorem{corollary}{Corollary}[theorem]
+#+latex_header:\newtheorem{lemma}[theorem]{Lemma}
+#+end_src
+
+* xmonad
+:PROPERTIES:
+:header-args: :tangle ~/.xmonad/xmonad.hs
+:END:
+
+#+begin_src haskell
+import Data.Ratio
+import XMonad
+import XMonad.StackSet as W
+import XMonad.ManageHook
+import XMonad.Util.NamedScratchpad
+import XMonad.Util.EZConfig(additionalKeysP, removeKeysP)
+import XMonad.Util.Scratchpad
+import XMonad.Layout.Hidden
+import XMonad.Layout.Gaps
+import XMonad.Layout.Spacing(smartSpacing)
+-- https://hackage.haskell.org/package/xmonad-contrib-0.13/docs/XMonad-Actions-WindowGo.html
+import XMonad.Actions.CycleWS
+import XMonad.Actions.DynamicWorkspaceOrder as DO
+import XMonad.Actions.WindowGo(runOrRaise, runOrRaiseNext)
+import XMonad.Actions.PhysicalScreens(onPrevNeighbour, onNextNeighbour)
+import XMonad.Hooks.DynamicLog
+import XMonad.Hooks.EwmhDesktops
+
+main :: IO ()
+main = xmonad
+       . ewmh
+       =<< statusBar "xmobar" xmobarPP toggleStructsKey myConfig
+  where
+    toggleStructsKey :: XConfig Layout -> (KeyMask, KeySym)
+    toggleStructsKey XConfig{ modMask = m } = (m, xK_b)
+
+myXmobarPP :: PP
+myXmobarPP = def
+    { ppSep             = magenta " • "
+    , ppTitleSanitize   = xmobarStrip
+    , ppCurrent = wrap (blue "[") (blue "]")
+    , ppHidden          = white . wrap " " ""
+    , ppHiddenNoWindows = lowWhite . wrap " " ""
+    , ppUrgent          = red . wrap (yellow "!") (yellow "!")
+    , ppOrder           = \[ws, l, _, wins] -> [ws, l, wins]
+    -- , ppExtras          = [formatFocused formatUnfocused]
+    }
+  where
+    formatFocused   = wrap (white    "[") (white    "]") . magenta . ppWindow
+    formatUnfocused = wrap (lowWhite "[") (lowWhite "]") . blue    . ppWindow
+
+    -- | Windows should have *some* title, which should not not exceed a
+    -- sane length.
+    ppWindow :: String -> String
+    ppWindow = xmobarRaw . (\w -> if null w then "untitled" else w) . shorten 30
+
+    blue, lowWhite, magenta, red, white, yellow :: String -> String
+    magenta  = xmobarColor "#ff79c6" ""
+    blue     = xmobarColor "#bd93f9" ""
+    white    = xmobarColor "#f8f8f2" ""
+    yellow   = xmobarColor "#f1fa8c" ""
+    red      = xmobarColor "#ff5555" ""
+    lowWhite = xmobarColor "#bbbbbb" ""
+
+myConfig = def
+  { modMask = mod4Mask -- rebind Mod to the super key
+  , terminal = "alacritty"
+  , layoutHook = myLayout
+  , manageHook = namedScratchpadManageHook scratchpads
+  }
+  `additionalKeysP`
+  -- M means the modifier key assigned for XMonad
+  -- which violates the Emacs convention
+  [ ("M-e",   runOrRaiseNext "emacs"                   (className =? "Emacs"))
+  , ("M-C-e", spawn "emacsclient -c")
+  , ("M-q",   runOrRaiseNext "qutebrowser"             (className =? "qutebrowser"))
+  , ("M-C-j", runOrRaiseNext "GDK_SCALE=2 GTK_THEME=Materia-dark-compact xournalpp"  (className =? "Xournalpp"))
+  , ("M-a", namedScratchpadAction scratchpads "default")
+  , ("M-s", namedScratchpadAction scratchpads "sketch")
+  , ("M-<Backspace>", withFocused hideWindow)
+  , ("M-S-<Backspace>", popOldestHiddenWindow)
+  , ("M-[", DO.moveTo Prev NonEmptyWS)
+  , ("M-]", DO.moveTo Next NonEmptyWS)
+  , ("M-u", onPrevNeighbour def W.view)
+  , ("M-i", onNextNeighbour def W.view)
+  , ("M-g", sendMessage $ ToggleGaps)
+  ]
+  `removeKeysP`
+  [ "M-m", "M-n", "M-,", "M-." ]
+ 
+myLayout = smartSpacing 10
+           $ gaps [(U, 50), (R, 50), (L, 50), (D, 50)]
+           $ hiddenWindows
+           $ tiled
+           ||| Full
+  where
+    tiled   = Tall nmaster delta ratio
+    nmaster = 1
+    ratio   = 1/2
+    delta   = 3/100
+
+scratchpads = [ NS "default" "alacritty -t default"
+                (title =? "default")
+                (customFloating $ RationalRect (1 % 5) (1 % 5) (3 % 5) (3 % 5))
+              , NS "sketch" "~/scripts/spawnSketch.sh"
+                (title =? "sketch")
+                -- (customFloating $ RationalRect (1 % 5) (1 % 5) (3 % 5) (3 % 5))
+                (customFloating $ RationalRect (1 % 10) (1 % 10) (4 % 5) (4 % 5))
+              ]
 #+end_src

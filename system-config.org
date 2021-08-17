@@ -2,23 +2,30 @@
 
 * base configuration
 
-#+begin_src scheme :tangle /etc/config.scm
-(use-modules (gnu))
+#+begin_src scheme :tangle config.scm
 (use-modules (gnu) 
 	     (gnu system nss) 
 	     (gnu packages emacs)
+	     (gnu packages text-editors)
 	     (gnu packages certs) 
 	     (gnu packages version-control)
 	     (gnu packages shells)
-	     (gnu packages vim)
 	     (gnu packages tmux)
 	     (gnu packages admin)
 	     (gnu packages linux)
 	     (gnu packages audio)
 	     (gnu packages pulseaudio)
-	     (gnu packages gnome)
 	     (gnu packages rsync)
 	     (gnu packages compression)
+	     (gnu packages rust-apps)
+	     (gnu packages curl)
+	     (gnu packages gnupg)
+	     (gnu packages ncurses)
+	     (gnu packages ssh)
+	     (gnu packages password-utils)
+	     (gnu services ssh)
+	     (gnu services xorg)
+	     (gnu services desktop)
 	     (gnu services networking)
 	     (gnu services sound)
 	     (gnu services docker))
@@ -27,14 +34,12 @@
 (use-modules (nongnu packages linux)
 	     (nongnu system linux-initrd))
 
-(use-service-modules desktop xorg ssh)
-
 (operating-system
   ;; using nonfree linux module
   (kernel linux)
   (initrd microcode-initrd)
   (firmware (list linux-firmware))
-  (host-name "ljguix")
+  (host-name "mafty")
   (timezone "Asia/Shanghai")
   (keyboard-layout (keyboard-layout "us"))
   (locale "en_US.utf8")
@@ -53,40 +58,49 @@
                %base-user-accounts))
 
   (packages (append (list
-                     ;; for HTTPS access
-                     nss-certs
-		     zsh
+		     acpi
+		     bat
+		     bluez
+		     bluez-alsa
+		     curl
+		     emacs
+		     kakoune
+		     fd
 		     fish
 		     git
-		     vim
-		     emacs
+		     gnupg
+		     htop
+		     gnu-make
+		     ncurses
+		     nss-certs ;; for HTTPS access
+		     openssh
+		     password-store
+		     pulseaudio
+		     ripgrep
 		     rsync
 		     tree
 		     unzip
+		     tmux
 		     zip
-		     bluez
-		     bluez-alsa
-		     pulseaudio
-                     ;; for user mounts
-                     gvfs)
+		     zsh
+		     )
                     %base-packages))
 
   ;; Add GNOME and Xfce---we can choose at the log-in screen
   ;; by clicking the gear.  Use the "desktop" services, which
   ;; include the X11 log-in service, networking with
   ;; NetworkManager, and more.
-  (services (append (list (service gnome-desktop-service-type)
-			  ;; it seems the alsa-service is already covered by
-			  ;; gnome-desktop services.
-			  ;; if not commented, guix will issue the error
-			  ;; guix system: error: duplicate 'asound.conf' entry for /etc
-			  ;; (service alsa-service-type)
-			  (service docker-service-type)
-			  (bluetooth-service #:auto-enable? #t)
-                          (set-xorg-configuration
-                           (xorg-configuration
-                            (keyboard-layout keyboard-layout))))
-                    %desktop-services))
+  (services (cons*
+	      (service slim-service-type)
+	      (extra-special-file "/usr/bin/env"
+				  (file-append coreutils "/bin/env"))
+	      ;; (service alsa-service-type)
+	      (service docker-service-type)
+	      (bluetooth-service #:auto-enable? #t)
+	      (modify-services %desktop-services
+                               (delete gdm-service-type))
+	      ))
+
   ;; Use the UEFI variant of GRUB with the EFI System
   ;; Partition mounted on /boot/efi.
   (bootloader (bootloader-configuration
@@ -104,4 +118,241 @@
                          (mount-point "/boot/efi")
                          (type "vfat")))
                  %base-file-systems)))
+#+end_src
+
+* profiles-meta
+
+** principles
+
+- isolated
+- reproducible
+
+** export channels to [[file:channel-specs.scm]]
+
+#+begin_src sh :results silent :shebang #!/usr/bin/env zsh
+guix describe --format=channels > channel-specs.scm
+#+end_src
+
+** TODO script for activating/deactivating profiles
+
+#+begin_src sh
+
+# NOTE: This file is generated from ~/.dotfiles/System.org.  Please see commentary there.
+
+GREEN='\033[1;32m'
+RED='\033[1;30m'
+NC='\033[0m'
+GUIX_EXTRA_PROFILES=$HOME/.guix-extra-profiles
+
+profiles=$*
+if [[ $# -eq 0 ]]; then
+    profiles="$HOME/.config/guix/manifests/*.scm";
+fi
+
+for profile in $profiles; do
+  # Remove the path and file extension, if any
+  profileName=$(basename $profile)
+  profileName="${profileName%.*}"
+  profilePath="$GUIX_EXTRA_PROFILES/$profileName"
+  manifestPath=$HOME/.config/guix/manifests/$profileName.scm
+
+  if [ -f $manifestPath ]; then
+    echo
+    echo -e "${GREEN}Activating profile:" $manifestPath "${NC}"
+    echo
+
+    mkdir -p $profilePath
+    guix package --manifest=$manifestPath --profile="$profilePath/$profileName"
+
+    # Source the new profile
+    GUIX_PROFILE="$profilePath/$profileName"
+    if [ -f $GUIX_PROFILE/etc/profile ]; then
+        . "$GUIX_PROFILE"/etc/profile
+    else
+        echo -e "${RED}Couldn't find profile:" $GUIX_PROFILE/etc/profile "${NC}"
+    fi
+  else
+    echo "No profile found at path" $profilePath
+  fi
+done
+#+end_src
+
+** TODO script for updating profiles
+
+** using manifest and profiles on another machine
+
+* profiles
+:PROPERTIES:
+:header-args: :mkdirp yes
+:END:
+
+** desktop environment
+
+#+begin_src scheme :tangle manifests/de.scm
+(specifications->manifest
+ (list
+  ;; wm
+  "ghc@8.6.5"
+  "xmonad@0.15"
+  "xmobar"
+  "ghc-xmonad-contrib@0.16"
+  ;; desktop softwares
+  "alacritty"
+  "qutebrowser"
+  "ungoogled-chromium"
+  "dmenu"
+  "brightnessctl"
+  "telegram-desktop"
+  ;; desktop utils
+  "ffmpeg"
+  "arandr"
+  "alsa-utils"
+  "autorandr"
+  "compton"
+  "feh"
+  "ibus"
+  "ibus-rime"
+  "pavucontrol"
+  "redshift"
+  "scrot"
+  "setxkbmap"
+  "sxiv"
+  "wmctrl"
+  "xcape"
+  "xclip"
+  "xev"
+  "xmodmap"
+  "xprop"
+  "xrandr"
+  "xrdb"
+  ;; gtk themes
+  "nordic-theme"
+  "arc-theme"
+  "matcha-theme"
+  "materia-theme"
+  ))
+#+end_src
+
+#+RESULTS:
+** wacom tablet
+
+#+begin_src scheme :tangle manifests/wacom.scm
+(specifications->manifest
+ (list "xournalpp"
+       "mypaint"
+       "libwacom"
+       "xf86-input-wacom"	 ;xsetwacom, thought not working at the moment
+       ))
+#+end_src
+
+#+RESULTS:
+
+** emacs
+
+#+begin_src scheme :tangle manifests/emacs.scm
+(specifications->manifest
+ (list
+  "emacs-native-comp"
+  "emacs-vterm"
+  "emacs-pdf-tools"
+  "emacs-ledger-mode"
+  "emacs-auctex"
+  "emacs-cdlatex"
+  "emacs-org-fragtog"
+  "emacs-org-roam"
+  "emacs-pyim"
+  "emacs-plantuml-mode"
+  ))
+#+end_src
+
+** fonts
+
+#+begin_src scheme :tangle manifests/fonts.scm
+(specifications->manifest
+ (list
+  "font-iosevka"
+  "font-victor-mono"
+  "font-wqy-microhei"
+  "font-wqy-zenhei"
+))
+#+end_src
+
+** media
+
+#+begin_src scheme :tangle manifests/media.scm
+(specifications->manifest
+ (list
+  "mpv"
+  "vlc"
+  "blender"
+  "gimp"
+  "obs"
+  "imagemagick"
+  "inkscape"
+  "kdenlive"
+  "simplescreenrecorder"))
+#+end_src
+
+** office
+
+#+begin_src scheme :tangle manifests/office.scm
+(specifications->manifest
+ (list
+  "offlineimap"
+  "mu@1.4.15"
+  "texlive"
+  "wordnet"
+  "ispell"
+  "pandoc"
+  "font-microsoft-times-new-roman"
+  "libreoffice"
+  "ghostscript"
+  ))
+#+end_src
+
+** utiliites
+
+#+begin_src scheme :tangle manifests/utils.scm
+(specifications->manifest
+ (list "ghostscript"
+       "transmission"
+       "transmission-remote-gtk"
+       "youtube-dl"
+       "wireshark"
+       "plantuml"
+       "graphviz"))
+#+end_src
+
+** useless
+
+#+begin_src scheme :tangle manifests/useless.scm
+(specifications->manifest
+ (list "neofetch"
+       "cowsay"
+       ))
+#+end_src
+
+** programming
+
+#+begin_src scheme :tangle manifests/prog.scm
+(specifications->manifest
+ (list "clang:extra"
+       "libcxx"
+       "perl"
+       "python"
+       "python-ipython"
+       "python-matplotlib"
+       "python-numpy"
+       "python-pip"
+       "python-scipy"
+       "python2"
+       "racket"
+       "valgrind"
+       "sbcl"
+       "clojure"
+       "sqlite"
+       "glibc"
+       "racket"
+       "maxima"
+       ))
 #+end_src

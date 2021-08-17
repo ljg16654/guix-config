@@ -776,7 +776,7 @@ Do not jump across groups."
 
 #+begin_src haskell
 Config { font = "xft:victormono-12"
-  , -- font = "-misc-fixed-*-*-*-*-30-*-*-*-*-*-*-*"
+  -- , -- font = "-misc-fixed-*-*-*-*-30-*-*-*-*-*-*-*"
        , additionalFonts = []
        , borderColor = "black"
        , border = TopB
@@ -811,11 +811,15 @@ Config { font = "xft:victormono-12"
 	                "-h", "green",
 	                "-l", "red"
                         ] 10
+                    , Run DiskU [("/", "<used>/<size>")]
+                      ["-L", "20", "-H", "50", "-m", "1", "-p", "3"]
+                      20
+                    , Run Kbd [("us(dvorak)", "DV"), ("us", "US")]
                     ]
        , sepChar = "%"
        , alignSep = "}{"
-       , template = "%StdinReader% }{ %battery% | %cpu% | %memory% | %wlp0s20f3% |\
-                    \ <fc=#ee9a00>%date%</fc>| %uname%"
+       , template = "%StdinReader% }{ %battery% | %disku% | %cpu% | %memory% | %wlp0s20f3% |\
+                    \ <fc=#ee9a00>%date%</fc> | %kbd% | %uname%"
        }
 #+end_src
 

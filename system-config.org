@@ -1,4 +1,5 @@
-#+title: System configuration
+#+title: system configuration
+#+STARTUP: content
 
 * base configuration
 
@@ -19,7 +20,7 @@
 	     (gnu packages compression)
 	     (gnu packages rust-apps)
 	     (gnu packages curl)
-	     (gnu packages gnupg)
+	     ;; (gnu packages gnupg)
 	     (gnu packages ncurses)
 	     (gnu packages ssh)
 	     (gnu packages password-utils)
@@ -68,7 +69,6 @@
 		     fd
 		     fish
 		     git
-		     gnupg
 		     htop
 		     gnu-make
 		     ncurses
@@ -205,10 +205,12 @@ done
 
 ** using manifest and profiles on another machine
 
-* profiles
+* manifests
 :PROPERTIES:
 :header-args: :mkdirp yes
 :END:
+
+To install a profile from a manifest file, use the command =guix package -m [FILE]=, where =[FILE]= contains guile code that evaluates to a manifest object.
 
 ** desktop environment
 
@@ -286,6 +288,7 @@ done
   "emacs-org-roam"
   "emacs-pyim"
   "emacs-plantuml-mode"
+  "emacs-git-gutter"
   ))
 #+end_src
 
@@ -334,7 +337,7 @@ done
   ))
 #+end_src
 
-** utiliites
+** utilities
 
 #+begin_src scheme :tangle manifests/utils.scm
 (specifications->manifest

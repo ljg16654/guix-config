@@ -777,7 +777,7 @@ Do not jump across groups."
 *** specify pinentry program
 
 #+begin_src conf
-pinentry-program /run/current-system/profile/bin/pinentry-gtk-2
+pinentry-program /home/nil/.guix-profile/bin/pinentry-gtk-2
 #+end_src
 
 *** pinentry-emacs

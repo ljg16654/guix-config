@@ -327,6 +327,7 @@ To install a profile from a manifest file, use the command =guix package -m [FIL
  (list
   "offlineimap"
   "mu@1.4.15"
+  "evince"
   "texlive"
   "wordnet"
   "ispell"

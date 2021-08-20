@@ -75,7 +75,6 @@ keycode  56 = b B grave U03B2
 keycode  57 = n N U03BD U039D
 keycode  58 = m M U03BC U039C
 #+end_src
-
 ** hyper key, reset modifiers and locks
 
 #+begin_src fundamental
@@ -134,7 +133,62 @@ window:
 
 ** colors and opacity
 
-*** dark mode 
+*** nord
+
+#+begin_src yaml
+background_opacity: 0.9
+
+colors:
+  primary:
+    background: '#2e3441'
+    foreground: '#eceff1'
+    dim_foreground: '#a5abb6'
+  cursor:
+    text: '#2e3440'
+    cursor: '#d8dee9'
+  vi_mode_cursor:
+    text: '#2e3440'
+    cursor: '#d8dee9'
+  selection:
+    text: CellForeground
+    background: '#4c566a'
+  search:
+    matches:
+      foreground: CellBackground
+      background: '#88c0d0'
+    bar:
+      background: '#434c5e'
+      foreground: '#d8dee9'
+  normal:
+    black: '#3b4252'
+    red: '#bf616a'
+    green: '#a3be8c'
+    yellow: '#ebcb8b'
+    blue: '#81a1c1'
+    magenta: '#b48ead'
+    cyan: '#88c0d0'
+    white: '#e5e9f0'
+  bright:
+    black: '#4c566a'
+    red: '#bf616a'
+    green: '#a3be8c'
+    yellow: '#ebcb8b'
+    blue: '#81a1c1'
+    magenta: '#b48ead'
+    cyan: '#8fbcbb'
+    white: '#eceff4'
+  dim:
+    black: '#373e4d'
+    red: '#94545d'
+    green: '#809575'
+    yellow: '#b29e75'
+    blue: '#68809a'
+    magenta: '#8c738c'
+    cyan: '#6d96a5'
+    white: '#aeb3bb'
+#+end_src
+
+*** dark mode                                                     :ARCHIVE:
 #+begin_src yaml
 background_opacity: 0.8
 
@@ -767,7 +821,7 @@ Do not jump across groups."
 (define-key *top-map* (kbd "s-a") "alacritty")
 #+end_src
 
-* password management and encryption
+* pjassword management and encryption
 
 ** gpg agent
 :PROPERTIES:
@@ -855,8 +909,6 @@ do
     esac
 done
 #+end_src
-
-
 
 * nyxt                                                              :ARCHIVE:
 :PROPERTIES:
@@ -1051,7 +1103,6 @@ scratchpads = [ NS "default" "alacritty -t default"
               ]
 #+end_src
 
-
 * xmobar
 :PROPERTIES:
 :header-args: :tangle ~/.config/xmobar/xmobarrc
@@ -1106,3 +1157,27 @@ Config { font = "xft:victormono-12"
                     \ <fc=#ee9a00>%date%</fc> | %kbd% | %uname%"
        }
 #+end_src
+
+* tmux
+:PROPERTIES:
+:header-args: :tangle ~/.tmux.conf
+:END:
+
+#+begin_src sh :eval never
+unbind C-b
+set -g prefix m-j
+bind m-j send-prefix
+set -g default-terminal "screen-256color"
+set -g status-position top	
+#+end_src
+
+#+begin_src sh :eval never
+set -g status-position top
+set -g mouse on
+set -g status-left ''
+set -g status-right ''
+set status-style 'bg=colour236 fg=colour255'
+setw -g window-status-style 'fg=colour255 bg=colour237'
+#+end_src
+
+#+RESULTS:

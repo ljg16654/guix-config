@@ -1,0 +1,3 @@
+#+title: my system configuration
+
+[[file:useless-screenshot.png][screenshot of no use]]

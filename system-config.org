@@ -346,6 +346,7 @@ To install a profile from a manifest file, use the command =guix package -m [FIL
        "transmission"
        "transmission-remote-gtk"
        "youtube-dl"
+       "openssl"
        "wireshark"
        "plantuml"
        "graphviz"))
@@ -380,6 +381,8 @@ To install a profile from a manifest file, use the command =guix package -m [FIL
        "clojure"
        "sqlite"
        "glibc"
+       "pkg-config"
+       "cmake"
        "racket"
        "maxima"
        ))

@@ -990,6 +990,7 @@ import XMonad.Actions.DynamicWorkspaceOrder as DO
 import XMonad.Actions.WindowGo(runOrRaise, runOrRaiseNext)
 import XMonad.Actions.PhysicalScreens(onPrevNeighbour, onNextNeighbour)
 import XMonad.Actions.WorkspaceNames(renameWorkspace, getCurrentWorkspaceName, getWorkspaceName)
+import XMonad.Actions.SwapWorkspaces(swapTo)  
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.EwmhDesktops
 import Data.Maybe
@@ -1072,6 +1073,8 @@ myConfig = def
   , ("M-u", onPrevNeighbour def W.view)
   , ("M-i", onNextNeighbour def W.view)
   , ("M-r", renameWorkspace def)
+  , ("M-<Left>", swapTo Prev)
+  , ("M-<Right>", swapTo Next)
   , ("M-g", sendMessage $ ToggleGaps)
   , ("<F1> w", spawn "gnome-screenshot -w")
   , ("<F1> a", spawn "gnome-screenshot -a")
@@ -1080,7 +1083,7 @@ myConfig = def
   , ("<XF86AudioRaiseVolume>", spawn "amixer set Master 5%+ unmute")
     ]
   `removeKeysP`
-  [ "M-m", "M-n", "M-,", "M-.", "M-w" ]
+  [ "M-m", "M-n", "M-w" ]
  
 myLayout = smartSpacing 10
            $ gaps [(U, 50), (R, 50), (L, 50), (D, 50)]

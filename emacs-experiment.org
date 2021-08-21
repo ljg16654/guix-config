@@ -178,7 +178,8 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
   :init (ace-window-display-mode t)
   :config
   (setq aw-keys
-	(list ?a ?s ?d ?f ?j ?k ?l ?q ?w ?e ?r ?x ?c ?v)))
+	(list ?a ?s ?d ?f ?j ?k ?l ?q ?w ?e ?r ?x ?c ?v))
+  (global-set-key (kbd "M-o") #'ace-window))
 #+end_src
 
 *** Bufler
@@ -197,10 +198,17 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
 			 (auto-workspace))
 			(group
 			 (group-or "notes"
-				   (dir "~/org-roam/" 2)))
+				   (dir "~/library/note/" 1)
+				   (dir "~/org-roam/" 2)
+				   (dir "~/org/" 2)))
 			(group
 			 (group-or "library"
 				   (dir "~/library/pdf" 1)))
+			(group
+			 (group-or "haskell"
+				   (mode-match "haskell" (rx (or "haskell-mode"
+								 "interactive-haskell-mode"
+								 "haskell-interactive-mode")))))
 			(group
 			 ;; Subgroup collecting all `help-mode' and `info-mode' buffers.
 			 (group-or "*Help/Info*"
@@ -374,6 +382,40 @@ and a few other custom rules:
 (setq Man-notify-method 'pushy)
 #+end_src
 
+*** pop up
+
+#+begin_src emacs-lisp
+;;;###autoload
+(defun arche/toggle-window-with-major-mode (&optional major-mode-to-toggle raise-win-fn)
+  "Toggle windows with specific major-mode in current frame. This
+function is mainly written for major-modes of inferior
+intepreters or shells.
+
+If the argument `major-mode-to-toggle' is not given, choose the
+major-mode associated with current buffer.
+
+If no live windows with specified major-mode exist in current
+frame, call `raise-win-fn' to open one. Otherwise, close all
+lives windows that match specified major-mode.
+"
+  (interactive)
+  (let* ((wl (window-list))
+	 (mm (if major-mode-to-toggle major-mode-to-toggle major-mode))
+	 (wl-filtered (-filter
+		       #'(lambda (win)
+			   (equal mm (with-current-buffer (window-buffer win) major-mode)))
+		       wl)))
+    (pcase (length wl-filtered)
+      (0 (and raise-win-fn (funcall raise-win-fn)))
+      (_ (mapcar #'delete-window wl-filtered)))))
+
+;;;###autoload
+(defun arche/switch-to-first-by-major-mode (mm)
+  (switch-to-buffer-other-window (-first #'(lambda (buf)
+					     (with-current-buffer buf (derived-mode-p mm)))
+					 (buffer-list))))
+#+end_src
+
 ** appearance
 
 *** ui components
@@ -429,9 +471,10 @@ and a few other custom rules:
 (use-package hide-mode-line)
 #+end_src
 
-**** custom mode line format
+**** TODO custom mode line format
 
 #+begin_src emacs-lisp
+;;;###autoload
 (defun arche/bib-pdf-get-title ()
     (let*
 	((my-global-bibtex-file "~/library/hcimu.bib")
@@ -441,8 +484,9 @@ and a few other custom rules:
 	(goto-char (bibtex-find-entry key t))
 	(let ((title (bibtex-autokey-get-field "title")))
 	  (unless bibtex-file-live-p (kill-buffer (current-buffer)))
-	  title)))) 
+	  title))))
 
+;;;###autoload
 (defun arche/mode-line-disp-buffer-name ()
   "Buffer name displayed in mode-line."
   (let* ((bn (buffer-name))
@@ -462,6 +506,7 @@ and a few other custom rules:
 		  (s-right lside bn)))
      (t bn))))
 
+;;;###autoload
 (defun +format-mode-line ()
   (let* ((lhs '((:eval (unless (equal major-mode 'exwm-mode) (meow-indicator)))
 		" "
@@ -477,9 +522,7 @@ and a few other custom rules:
 			 flymake-mode-line-format))
 		"  "
 		(:eval (arche/mode-line-disp-buffer-name))))
-	 (rhs '((:eval (+smart-file-name-cached))
-		" "
-		(:eval mode-name)
+	 (rhs '((:eval mode-name)
 		(vc-mode vc-mode)))
 	 (ww (window-width))
 	 (lhs-str (format-mode-line lhs))
@@ -488,14 +531,18 @@ and a few other custom rules:
     (format "%s%s%s"
 	    lhs-str
 	    (propertize " " 'display `((space :align-to (- (+ right right-fringe right-margin) (+ 1 ,rhs-w)))))
-	    rhs-str)))
+	    rhs-str))) 
 #+end_src
 
 **** display mode line in header line
 
 #+begin_src emacs-lisp
-(setq-default mode-line-format nil)
-(setq-default header-line-format '((:eval (+format-mode-line))))
+(defun arche/setup-lines ()
+  (setq-default mode-line-format nil)
+  (setq-default header-line-format '((:eval (+format-mode-line)))))
+
+(add-hook 'emacs-startup-hook #'arche/setup-lines) 
+
 #+end_src
 
 **** display global mode line content in tab bar
@@ -633,6 +680,8 @@ and a few other custom rules:
 			       (conf-mode . normal)
 			       (cider-repl-mode . normal)
 			       (inferior-haskell-mode . normal)
+			       (inferior-python-mode . normal)
+			       (haskell-interactive-mode . normal)
 			       (geiser-repl-mode . normal)
 			       (eshell-mode . normal)
 			       (shell-mode . normal)
@@ -787,7 +836,7 @@ and a few other custom rules:
    ;; right hand
    '("y" . meow-yank)
    '("Y" . meow-yank-pop)
-   '("u" . hui-select-thing)
+   '("u" . meow-mark-symbol)
    '("i" . meow-inner-of-thing)
    '("I" . meow-bounds-of-thing)
    '("o" . meow-open-below)
@@ -823,6 +872,12 @@ and a few other custom rules:
 
 #+begin_src emacs-lisp
 (use-package olivetti)
+#+end_src
+
+*** code folding
+
+#+begin_src emacs-lisp
+(use-package outshine)
 #+end_src
 
 ** version-control
@@ -865,9 +920,12 @@ Add guix system program path:
 *** emacs packages
 
 #+begin_src emacs-lisp
-  (use-package org-bullets :after org)
-  (use-package org-fragtog :after org :straight nil)
-  (use-package cdlatex :straight nil)
+(use-package org-bullets :after org)
+(use-package org-fragtog :after org :straight nil)
+(use-package cdlatex :straight nil)
+(use-package org-pdftools
+  :after (pdf-tools org)
+  :hook (org-mode . org-pdftools-setup-link))
 #+end_src
 
 *** basic setup
@@ -944,6 +1002,8 @@ Add guix system program path:
 
 *** babel
 
+**** basic setup
+
 #+begin_src emacs-lisp
 ;;;###autoload
 (defun arche/org-setup-babel ()
@@ -956,6 +1016,12 @@ Add guix system program path:
   (setq org-src-window-setup 'current-window)
   ;; display/update images in the buffer after I evaluate
   (add-hook 'org-babel-after-execute-hook 'org-display-inline-images 'append))
+#+end_src
+
+**** ob-async
+
+#+begin_src emacs-lisp
+(use-package ob-async)
 #+end_src
 
 *** oc
@@ -1098,6 +1164,10 @@ Add guix system program path:
   :straight (:type git
 		   :host github
 		   :repo "dalanicolai/pdf-continuous-scroll-mode.el"))
+
+(use-package saveplace-pdf-view
+  :after pdf-tools
+  :init (save-place-mode 1))
 #+end_src
 
 *** browse library
@@ -1136,17 +1206,30 @@ Add guix system program path:
 
 ;; TODO: display author and additional info with marginalia
 ;; https://github.com/minad/marginalia
-(defun arche/open-pdf-in-library ()
-  (interactive)
+(defun arche/open-pdf-in-library (&optional arg)
+  (interactive "P")
   (let*
       ((collection (mapcar (lambda (key) (list (concat (arche/key->title key) " | " (arche/key->author key)) key)) (arche/bib-keys)))
        (title-and-author (completing-read "select book:" collection))
        (key (cadr (assoc title-and-author collection)))
        (pdf-file (arche/key->pdf-file key)))
     (if pdf-file
-	(find-file pdf-file)
-      (message "book not found :)"))))
+	(if arg
+	    (let ((command (concat "mupdf-x11" " " pdf-file)))
+	      (start-process-shell-command command nil command))
+	  (message "hello")
+	  (find-file pdf-file))
+	(message "book not found :)")))) 
 
+
+
+
+#+end_src
+
+** docker
+
+#+begin_src emacs-lisp
+(use-package docker)
 #+end_src
 
 ** languages
@@ -1160,7 +1243,9 @@ Add guix system program path:
 *** haskell
 
 #+begin_src emacs-lisp
-(use-package haskell-mode)
+(use-package haskell-mode
+  :config
+  (define-key haskell-mode-map (kbd "C-c C-c") #'haskell-process-load-file))
 (add-to-list 'org-babel-load-languages (cons 'haskell t))
 #+end_src
 
@@ -1178,12 +1263,57 @@ Add guix system program path:
 (use-package geiser-guile)
 #+end_src
 
-**** yaml
+**** clojure                                                     :ARCHIVE:
+
+#+begin_src emacs-lisp
+(use-package cider)
+#+end_src
+
+**** common lisp
+
+#+begin_src emacs-lisp
+(use-package sly)
+#+end_src
+
+*** yaml
 
 #+begin_src emacs-lisp
 (use-package yaml-mode)
 (add-to-list 'org-babel-load-languages (cons 'yaml t))
 #+end_src
+
+*** python
+
+
+**** babel
+
+#+begin_src emacs-lisp
+(setq org-babel-python-command "python3")
+#+end_src
+
+**** elpy
+
+#+begin_src emacs-lisp
+(use-package elpy
+  :init (elpy-enable))
+#+end_src
+
+**** toggle inferior python window (requires [[*pop up]])
+
+#+begin_src emacs-lisp
+;;;###autoload
+(defun arche/raise-inferior-python ()
+  (interactive)
+  (arche/switch-to-first-by-major-mode 'inferior-python-mode))
+
+;;;###autoload
+(defun arche/toggle-python ()
+  (interactive)
+  (arche/toggle-window-with-major-mode 'inferior-python-mode #'arche/raise-inferior-python))
+
+(global-set-key (kbd "C-c p") #'arche/toggle-python)
+#+end_src
+
 
 ** startup speed optimization(tail)
 
@@ -1191,5 +1321,16 @@ Add guix system program path:
 (setq gc-cons-threshold 16777216
       gc-cons-percentage 0.1
       file-name-handler-alist arche/file-name-handler-alist)
+#+end_src
+
+
+
+* experimental
+
+** eva
+
+#+begin_src emacs-lisp
+(use-package eva
+  :straight (eva :type git :host github :repo "meedstrom/eva"))
 #+end_src
 

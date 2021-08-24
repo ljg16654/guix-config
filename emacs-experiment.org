@@ -11,6 +11,14 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
 			   <<guix-packages>>)
 #+end_src
 
+* profiles
+
+#+begin_src emacs-lisp :tangle ~/.emacs-profiles.el
+(("default"   . ((user-emacs-directory . "~/.config/emacs-doom")))
+ ("stable" . ((user-emacs-directory . "~/.config/emacs-stable")))
+ ("experiment"   . ((user-emacs-directory . "~/.config/emacs-experiment"))))
+#+end_src
+
 * Core
 :PROPERTIES:
 :header-args:emacs-lisp: :tangle ~/.config/emacs-experiment/init.el :results silent
@@ -107,6 +115,13 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
 (define-key emacs-lisp-mode-map (kbd "C-c C-c") #'eval-buffer)
 #+end_src
 
+
+** yas
+
+#+begin_src emacs-lisp
+(use-package yasnippet)
+#+end_src
+
 ** company
 
 #+begin_src emacs-lisp
@@ -149,6 +164,33 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
       (org-capture-finalize)))
 
   (global-set-key (kbd "s-w") #'wordnut-search-and-capture))
+#+end_src
+
+** rss
+
+#+begin_src emacs-lisp
+(use-package elfeed)
+(global-set-key (kbd "C-x w") #'elfeed)
+(setq elfeed-feeds
+      '(
+        ("https://www.motorsport.com/rss/f1/news/" motorsport)
+	("https://emacsredux.com/atom.xml" bbatsov)
+	("https://protesilaos.com/codelog.xml" prot-coding-blog)
+	("https://updates.orgmode.org/feed/updates" org-mode-update)
+	;; ("https://www.reddit.com/r/emacs/.rss" r/emacs)
+	;; ("https://www.reddit.com/r/org-mode/.rss" r/org-mode)
+	("https://events.umich.edu/group/3817/rss?v=2&html_output=true" michigan-events)
+	("https://www.solidot.org/index.rss" solidot)
+        ;; ("http://finance.yahoo.com/rss/headline?s=MSFT" finance)
+	;; ("https://feeds.bloomberg.com/politics/news.rss" bloomberg-politics)
+        ))
+#+end_src
+
+** default browser
+
+#+begin_src emacs-lisp
+(setq browse-url-generic-program "qutebrowser")
+(setq browse-url-browser-function #'browse-url-generic)
 #+end_src
 
 ** window and buffer management
@@ -1024,6 +1066,16 @@ Add guix system program path:
 (use-package ob-async)
 #+end_src
 
+
+*** noter
+
+#+begin_src emacs-lisp
+(use-package org-noter
+  :config
+  (setq org-noter-notes-search-path
+	(list "~/library/notes/")))
+#+end_src
+
 *** oc
 
 #+begin_src emacs-lisp
@@ -1073,24 +1125,6 @@ Add guix system program path:
 		   :branch "main"
 		   :files ("*.el" "out"))
   :after org-roam)
-#+end_src
-
-*** bibtex-actions                                                :ARCHIVE:
-
-#+begin_src emacs-lisp
-(use-package bibtex-completion)
-(use-package citeproc)
-
-(use-package oc-bibtex-actions
-  :straight (:host github
-		   :repo "bdarcus/bibtex-actions"
-		   :branch "main")
-  :bind (("C-c b" . org-cite-insert))
-  :after (embark org bibtex-completion citeproc)
-  :config
-  (setq bibtex-actions-bibliography '("~/library/hcimu.bib"))
-  (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
-  (setq bibtex-actions-at-point-function 'embark-act))
 #+end_src
 
 *** finishing setup
@@ -1279,16 +1313,23 @@ Add guix system program path:
 
 #+begin_src emacs-lisp
 (use-package yaml-mode)
-(add-to-list 'org-babel-load-languages (cons 'yaml t))
+;; (add-to-list 'org-babel-load-languages (cons 'yaml t))
 #+end_src
 
 *** python
 
 
-**** babel
+**** TODO: babel python src blocks do not work
 
 #+begin_src emacs-lisp
 (setq org-babel-python-command "python3")
+(add-to-list 'org-babel-load-languages (cons 'python t))
+#+end_src
+
+~org-babel-comint-use-async~?
+
+#+begin_src python
+1 + 1
 #+end_src
 
 **** elpy
@@ -1334,3 +1375,80 @@ Add guix system program path:
   :straight (eva :type git :host github :repo "meedstrom/eva"))
 #+end_src
 
+** org-ref-cite
+
+#+begin_src emacs-lisp
+(use-package ivy-bibtex
+  :init
+  (setq bibtex-completion-bibliography '("~/library/hcimu.bib")
+	bibtex-completion-notes-path "~/library/notes/"
+	bibtex-completion-notes-template-multiple-files "#+TITLE: Notes on: ${author-or-editor} (${year}): ${title}\n\nSee [cite/t:@${=key=}]\n"
+	bibtex-completion-library-path '("~/library/pdf/")
+	bibtex-completion-additional-search-fields '(keywords)
+	bibtex-completion-display-formats
+	'((article       . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${journal:40}")
+	  (inbook        . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} Chapter ${chapter:32}")
+	  (incollection  . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${booktitle:40}")
+	  (inproceedings . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*} ${booktitle:40}")
+	  (t             . "${=has-pdf=:1}${=has-note=:1} ${year:4} ${author:36} ${title:*}"))))
+
+(use-package citeproc)
+(use-package citeproc)
+(use-package org-ref)
+(use-package org-ref-cite
+  :straight (:host github :repo "jkitchin/org-ref-cite" :branch "main")
+  :config
+  ;; I like green links
+  (set-face-attribute 'org-cite nil :foreground "DarkSeaGreen4")
+  (set-face-attribute 'org-cite-key nil :foreground "forest green")
+  (setq
+   org-cite-global-bibliography bibtex-completion-bibliography
+   ;; https://github.com/citation-style-language/styles
+   ;; or https://www.zotero.org/styles
+   org-cite-csl-styles-dir "/Users/jkitchin/Dropbox/emacs/scimax/org-ref-cite/csl-styles"
+   org-cite-insert-processor 'org-ref-cite
+   org-cite-follow-processor 'org-ref-cite
+   org-cite-activate-processor 'org-ref-cite
+   org-cite-export-processors '((html csl "elsevier-with-titles.csl")
+			        (latex org-ref-cite)
+			        (t basic))))
+(setq bibtex-completion-pdf-field "file")
+(setq org-ref-get-pdf-filename-function #'org-ref-get-pdf-filename-helm-bibtex
+	  org-ref-open-pdf-function #'org-ref-open-pdf-at-point)
+#+end_src
+
+cite:book:2387878
+
+** hyperbole
+
+#+begin_src emacs-lisp
+(use-package hyperbole)
+#+end_src
+
+#+RESULTS:
+
+** TODO bibtex-actions
+
+ #+begin_src emacs-lisp
+(use-package bibtex-completion)
+(use-package citeproc)
+
+(use-package oc-bibtex-actions
+  :straight (:host github
+		   :repo "bdarcus/bibtex-actions"
+		   :branch "main")
+  :bind (("C-c b" . org-cite-insert))
+  :after (embark org bibtex-completion citeproc)
+  :config
+  (setq bibtex-actions-bibliography '("~/library/hcimu.bib"))
+  (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
+  (setq bibtex-actions-at-point-function 'embark-act))
+#+end_src
+
+** TODO org contrib with straight?
+
+#+begin_src emacs-lisp
+(use-package org-contrib)
+#+end_src
+
+#+RESULTS:

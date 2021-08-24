@@ -246,6 +246,7 @@ To install a profile from a manifest file, use the command =guix package -m [FIL
   "wmctrl"
   "xcape"
   "xclip"
+  "xinput"
   "xev"
   "xmodmap"
   "xprop"

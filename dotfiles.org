@@ -1166,21 +1166,34 @@ Config { font = "xft:victormono-12"
 :header-args: :tangle ~/.tmux.conf
 :END:
 
+** keybindings
+
 #+begin_src sh :eval never
 unbind C-b
 set -g prefix m-j
 bind m-j send-prefix
-set -g default-terminal "screen-256color"
-set -g status-position top	
 #+end_src
 
+** apperance
+
 #+begin_src sh :eval never
+set -g default-terminal "screen-256color"
 set -g status-position top
-set -g mouse on
+set -g status-position top
 set -g status-left ''
 set -g status-right ''
 set status-style 'bg=colour236 fg=colour255'
 setw -g window-status-style 'fg=colour255 bg=colour237'
 #+end_src
 
-#+RESULTS:
+** enable mouse
+
+#+begin_src sh :eval never
+set -g mouse on
+#+end_src
+
+** history length
+
+#+begin_src sh :eval never
+set -g history-length 9999
+#+end_src

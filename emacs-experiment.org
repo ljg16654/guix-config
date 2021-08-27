@@ -115,7 +115,6 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
 (define-key emacs-lisp-mode-map (kbd "C-c C-c") #'eval-buffer)
 #+end_src
 
-
 ** yas
 
 #+begin_src emacs-lisp
@@ -1066,7 +1065,6 @@ Add guix system program path:
 (use-package ob-async)
 #+end_src
 
-
 *** noter
 
 #+begin_src emacs-lisp
@@ -1260,6 +1258,44 @@ Add guix system program path:
 
 #+end_src
 
+** telega
+
+#+begin_src scheme :noweb-ref guix-packages :noweb-sep ""
+
+"emacs-telega-server"
+"emacs-telega-contrib"
+
+#+end_src
+
+~cl--plist-remove~ is a deprecated function and removed in telega source recently (#303).
+
+#+begin_src emacs-lisp :tangle no
+(defun cl--plist-remove (plist member)
+  (cond
+   ((null plist) nil)
+   ((null member) plist)
+   ((eq plist member) (cddr plist))
+   (t `(,(car plist) ,(cadr plist) ,@(cl--plist-remove (cddr plist) member)))))
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package telega
+  :init (fset 'cl--plist-remove 'map--plist-delete)
+  :straight nil
+  :config
+  (setq telega-proxies
+	'((:server "127.0.0.1"
+		   :port 7890
+		   :enable t
+		   :type (:@type "proxyTypeHttp")
+		   )))
+  (add-hook 'telega-chat-mode-hook #'timeclock-query-out)
+  (add-hook 'timeclock-in-hook #'(lambda () (telega-kill t)))
+ (define-key dired-mode-map (kbd "H-s") #'telega-buffer-file-send)
+  (add-hook 'telega-chat-mode-hook
+	    #'(lambda () (setq line-spacing 0))))
+#+end_src
+
 ** docker
 
 #+begin_src emacs-lisp
@@ -1318,7 +1354,6 @@ Add guix system program path:
 
 *** python
 
-
 **** TODO: babel python src blocks do not work
 
 #+begin_src emacs-lisp
@@ -1355,7 +1390,6 @@ Add guix system program path:
 (global-set-key (kbd "C-c p") #'arche/toggle-python)
 #+end_src
 
-
 ** startup speed optimization(tail)
 
 #+begin_src emacs-lisp
@@ -1363,7 +1397,6 @@ Add guix system program path:
       gc-cons-percentage 0.1
       file-name-handler-alist arche/file-name-handler-alist)
 #+end_src
-
 
 
 * experimental
@@ -1452,3 +1485,4 @@ cite:book:2387878
 #+end_src
 
 #+RESULTS:
+

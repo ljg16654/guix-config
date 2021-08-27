@@ -13,10 +13,10 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
 
 * profiles
 
-#+begin_src emacs-lisp :tangle ~/.emacs-profiles.el
-(("default"   . ((user-emacs-directory . "~/.config/emacs-doom")))
+ #+begin_src emacs-lisp :tangle ~/.emacs-profiles.el
+(("default"   . ((user-emacs-directory . "~/.config/emacs-experiment")))
  ("stable" . ((user-emacs-directory . "~/.config/emacs-stable")))
- ("experiment"   . ((user-emacs-directory . "~/.config/emacs-experiment"))))
+ ("doom"   . ((user-emacs-directory . "~/.config/emacs-doom"))))
 #+end_src
 
 * Core
@@ -658,6 +658,12 @@ lives windows that match specified major-mode.
   (global-set-key (kbd "M-i") #'consult-imenu))
 #+end_src
 
+** dired
+
+#+begin_src emacs-lisp
+(use-package peep-dired)
+#+end_src
+
 ** editing
 
 *** input method
@@ -1104,6 +1110,12 @@ Add guix system program path:
 
 *** roam
 
+#+begin_src scheme :noweb-ref guix-packages :noweb-sep ""
+
+"emacs-org-roam"
+
+#+end_src
+
 #+begin_src emacs-lisp
 (use-package org-roam
   :straight nil
@@ -1258,10 +1270,28 @@ Add guix system program path:
 
 #+end_src
 
+** http-proxy
+
+#+begin_src emacs-lisp
+;;;###autoload
+(defun arche/toggle-http-proxy ()
+  (interactive)
+  (let ((p "http://127.0.0.1:7890"))
+    (if (getenv "http_proxy")
+	(progn
+	  (setenv "http_proxy" nil)
+	  (setenv "https_proxy" nil))
+      (progn
+	(setenv "http_proxy" p)
+	(setenv "https_proxy" p)))))
+#+end_src
+
 ** telega
 
 #+begin_src scheme :noweb-ref guix-packages :noweb-sep ""
 
+"font-gnu-unifont"
+"font-gnu-freefont"
 "emacs-telega-server"
 "emacs-telega-contrib"
 
@@ -1279,10 +1309,19 @@ Add guix system program path:
 #+end_src
 
 #+begin_src emacs-lisp
+;;;###autoload
+(defun arche/telega-mode-hook ()
+  (setq line-spacing 0)
+  (setq olivetti-body-width 100)
+  (if (one-window-p) (olivetti-mode t)))
+
 (use-package telega
+  :after (olivetti)
   :init (fset 'cl--plist-remove 'map--plist-delete)
   :straight nil
   :config
+  (setq telega-emoji-font-family "EmojiOne")
+  (setq telega-emoji-use-images "EmojiOne") 
   (setq telega-proxies
 	'((:server "127.0.0.1"
 		   :port 7890
@@ -1291,9 +1330,9 @@ Add guix system program path:
 		   )))
   (add-hook 'telega-chat-mode-hook #'timeclock-query-out)
   (add-hook 'timeclock-in-hook #'(lambda () (telega-kill t)))
- (define-key dired-mode-map (kbd "H-s") #'telega-buffer-file-send)
-  (add-hook 'telega-chat-mode-hook
-	    #'(lambda () (setq line-spacing 0))))
+  (define-key dired-mode-map (kbd "H-s") #'telega-buffer-file-send)
+  (add-hook 'telega-chat-mode-hook #'arche/telega-mode-hook)
+  (add-hook 'telega-root-mode-hook #'arche/telega-mode-hook))
 #+end_src
 
 ** docker
@@ -1397,7 +1436,6 @@ Add guix system program path:
       gc-cons-percentage 0.1
       file-name-handler-alist arche/file-name-handler-alist)
 #+end_src
-
 
 * experimental
 

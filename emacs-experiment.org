@@ -16,7 +16,8 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
  #+begin_src emacs-lisp :tangle ~/.emacs-profiles.el
 (("default"   . ((user-emacs-directory . "~/.config/emacs-experiment")))
  ("stable" . ((user-emacs-directory . "~/.config/emacs-stable")))
- ("doom"   . ((user-emacs-directory . "~/.config/emacs-doom"))))
+ ("doom"   . ((user-emacs-directory . "~/.config/emacs-doom")))
+ ("mininum"   . ((user-emacs-directory . "~/.config/emacs-mininum"))))
 #+end_src
 
 * Core
@@ -39,7 +40,7 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
 ** startup speed optimization(head)
 
 #+begin_src emacs-lisp
-(defvar arche/file-name-handler-alist file-name-handler-alist)
+;; (defvar arche/file-name-handler-alist file-name-handler-alist)
 
 (setq gc-cons-threshold 128000000
       gc-cons-percentage 0.6)
@@ -93,6 +94,11 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
   "Search for font with completing-read api and insert."
   (interactive)
   (insert (completing-read "Insert font: " (-uniq (font-family-list)))))
+
+(defun arche/find-in-home ()
+  "find file in home directory"
+  (interactive)
+  (find-file (read-file-name "Find file: " "~/")))
 #+end_src
 
 *** lisp editing
@@ -118,7 +124,9 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
 ** yas
 
 #+begin_src emacs-lisp
-(use-package yasnippet)
+(use-package yasnippet
+  :commands yas/global-mode
+  :init (yas/global-mode t))
 #+end_src
 
 ** company
@@ -244,7 +252,8 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
 				   (dir "~/org/" 2)))
 			(group
 			 (group-or "library"
-				   (dir "~/library/pdf" 1)))
+				   (dir "~/library/pdf" 1)
+				   (dir "~/Documents/cambridge-notes/" 1)))
 			(group
 			 (group-or "haskell"
 				   (mode-match "haskell" (rx (or "haskell-mode"
@@ -457,6 +466,19 @@ lives windows that match specified major-mode.
 					 (buffer-list))))
 #+end_src
 
+For eshell:
+
+#+begin_src emacs-lisp
+(defun arche/toggle-eshell (&optional arg)
+  "Toggle or create eshell buffer.
+
+Without prefix arg, toggle eshell. Otherwise the behavior is the same as `eshell'."
+  (interactive)
+  (if arg
+      (eshell arg)
+    (arche/toggle-window-with-major-mode 'eshell-mode #'eshell)))
+#+end_src
+
 ** appearance
 
 *** ui components
@@ -502,7 +524,7 @@ lives windows that match specified major-mode.
   (setq bespoke-set-mode-line nil)
   (setq bespoke-set-theme 'light))
 
-(load-theme 'bespoke t)
+(load-theme 'modus-operandi t)
 #+end_src
 
 *** modeline
@@ -664,6 +686,12 @@ lives windows that match specified major-mode.
 (use-package peep-dired)
 #+end_src
 
+*** disk-usage
+
+#+begin_src emacs-lisp
+(use-package disk-usage)
+#+end_src
+
 ** editing
 
 *** input method
@@ -726,8 +754,10 @@ lives windows that match specified major-mode.
 			       (prog-mode . normal)
 			       (conf-mode . normal)
 			       (cider-repl-mode . normal)
+			       (sly-mrepl-mode . normal)
 			       (inferior-haskell-mode . normal)
 			       (inferior-python-mode . normal)
+			       (maxima-inferior-mode .normal)
 			       (haskell-interactive-mode . normal)
 			       (geiser-repl-mode . normal)
 			       (eshell-mode . normal)
@@ -787,23 +817,25 @@ lives windows that match specified major-mode.
    '("k" . meow-prev))
 
   (meow-leader-define-key
-   '("a" . execute-extended-command)
+   '("a" . org-agenda-list)
    '("b" . arche/open-pdf-in-library)
    '("c" . meow-keypad-start)
    '("C" . find-file-in-emacs-config)
    '("d" . hl-todo/body)
+   '("e" . arche/toggle-eshell)
    '("f" . org-roam-node-find)
    '("g" . meow-keypad-start)
    '("h" . meow-keypad-start)
    '("i" . meow-last-buffer)
+   '("j" . meow-motion-origin-command)
    '("k" . arche/kill-current-buffer)
    '("l" . recenter-top-bottom)
-   '("M" . bookmark-jump)
+   '("m" . bookmark-jump)
    '("n" . ivy-magit-todos)
-   '("j" . meow-motion-origin-command)
    '("o" . bufler-switch-buffer)
    '("p" . project-find-file)
    '("P" . projectile-find-other-file)
+   '("q" . arche/find-in-home)
    '("r" . revert-buffer)
    '("s" . consult-ripgrep)
    '("S" . (lambda () (interactive) (consult-ripgrep t)))
@@ -1015,7 +1047,8 @@ Add guix system program path:
 #+begin_src emacs-lisp
 ;;;###autoload
 (defun arche/org-setup-agenda ()
-  (setq org-agenda-files (list "~/org/todo.org")))
+  (setq org-agenda-files (list "~/org/todo.org"))
+  (global-set-key (kbd "C-'") #'org-cycle-agenda-files))
 #+end_src
 
 *** capture
@@ -1057,8 +1090,7 @@ Add guix system program path:
   (setq-default org-hide-block-startup t)
   (setq org-edit-src-content-indentation 0)
   (setq org-src-tab-src-acts-natively t)
-  ;; leading whitespace not preserved on export
-  (setq org-src-preserve-indentation nil)
+  (setq org-src-preserve-indentation t)
   (setq org-confirm-babel-evaluate nil)
   (setq org-src-window-setup 'current-window)
   ;; display/update images in the buffer after I evaluate
@@ -1096,6 +1128,16 @@ Add guix system program path:
     ))
 #+end_src
 
+In order to support citation in (latex->pdf) process:
+
+#+begin_src emacs-lisp
+(setq org-latex-pdf-process
+      '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+	"bibtex %b"
+	"pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+	"pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+#+end_src
+
 *** hook
 
 #+begin_src emacs-lisp
@@ -1105,6 +1147,7 @@ Add guix system program path:
   (org-indent-mode t)
   (org-cdlatex-mode)
   (org-fragtog-mode)
+  (visual-line-mode t)
   (if (one-window-p) (olivetti-mode t)))
 #+end_src
 
@@ -1322,12 +1365,13 @@ Add guix system program path:
   :config
   (setq telega-emoji-font-family "EmojiOne")
   (setq telega-emoji-use-images "EmojiOne") 
-  (setq telega-proxies
-	'((:server "127.0.0.1"
-		   :port 7890
-		   :enable t
-		   :type (:@type "proxyTypeHttp")
-		   )))
+  ;; (setq telega-proxies
+  ;; 	'((:server "127.0.0.1"
+  ;; 		   :port 7890
+  ;; 		   :enable t
+  ;; 		   :type (:@type "proxyTypeHttp")
+  ;; 		   )))
+  (setq telega-proxies nil) 
   (add-hook 'telega-chat-mode-hook #'timeclock-query-out)
   (add-hook 'timeclock-in-hook #'(lambda () (telega-kill t)))
   (define-key dired-mode-map (kbd "H-s") #'telega-buffer-file-send)
@@ -1341,12 +1385,25 @@ Add guix system program path:
 (use-package docker)
 #+end_src
 
+** ledger
+
+#+begin_src emacs-lisp
+(use-package ledger-mode
+  :straight nil)
+#+end_src
+
 ** languages
 
 *** shell
 
 #+begin_src emacs-lisp
 (add-to-list 'org-babel-load-languages (cons 'shell t))
+#+end_src
+
+*** c
+
+#+begin_src emacs-lisp
+(add-to-list 'org-babel-load-languages (cons 'C t))
 #+end_src
 
 *** haskell
@@ -1370,12 +1427,6 @@ Add guix system program path:
 
 #+begin_src emacs-lisp
 (use-package geiser-guile)
-#+end_src
-
-**** clojure                                                     :ARCHIVE:
-
-#+begin_src emacs-lisp
-(use-package cider)
 #+end_src
 
 **** common lisp
@@ -1406,11 +1457,14 @@ Add guix system program path:
 1 + 1
 #+end_src
 
+#+RESULTS:
+: None
+
 **** elpy
 
 #+begin_src emacs-lisp
 (use-package elpy
-  :init (elpy-enable))
+  :config (elpy-enable))
 #+end_src
 
 **** toggle inferior python window (requires [[*pop up]])
@@ -1434,7 +1488,8 @@ Add guix system program path:
 #+begin_src emacs-lisp
 (setq gc-cons-threshold 16777216
       gc-cons-percentage 0.1
-      file-name-handler-alist arche/file-name-handler-alist)
+      ;; file-name-handler-alist arche/file-name-handler-alist
+      )
 #+end_src
 
 * experimental
@@ -1524,3 +1579,281 @@ cite:book:2387878
 
 #+RESULTS:
 
+** maxima
+
+#+begin_src emacs-lisp
+(use-package maxima)
+
+;;;###autoload
+(defun arche/maxima-inferior-mode-hook ()
+  (meow-normal-mode t)
+  (electric-pair-mode t))
+
+(add-hook 'maxima-inferior-mode-hook #'arche/maxima-inferior-mode-hook)
+#+end_src
+
+#+RESULTS:
+| arche/maxima-inferior-mode-hook |
+
+** insert random string
+
+http://ergoemacs.org/emacs/elisp_insert_random_number_string.html
+
+#+begin_src emacs-lisp
+(defun xah-insert-random-number (NUM)
+  "Insert NUM random digits.
+NUM default to 5.
+Call `universal-argument' before for different count.
+URL `http://ergoemacs.org/emacs/elisp_insert_random_number_string.html'
+Version 2017-05-24"
+  (interactive "P")
+  (let (($charset "1234567890" )
+        ($baseCount 10))
+    (dotimes (_ (if (numberp NUM) (abs NUM) 5 ))
+      (insert (elt $charset (random $baseCount))))))
+#+end_src
+
+#+RESULTS:
+: xah-insert-random-number
+
+** supersave
+
+#+begin_src emacs-lisp
+(use-package super-save
+  :custom
+  (super-save-exclude (list "\\.pdf$"
+			    "\\.epub$"))
+  :config
+  (super-save-mode +1))
+#+end_src
+
+#+RESULTS:
+: t
+
+** backup config
+
+#+begin_src emacs-lisp
+(setq backup-directory-alist (list (cons ""
+					 (concat user-emacs-directory "backup/"))))
+#+end_src
+
+#+RESULTS:
+: (( . ~/.config/emacs-experiment/backup/))
+
+** inline math
+
+#+begin_src emacs-lisp
+(defvar inline-math-candidates '()
+  "A list of strings. Stored for completion of inline math LaTeX
+  fragments.")
+
+;;;###autoload
+(defun my-org-get-inline-math () 
+  "Get inline math around cursor"
+  (interactive)
+  (let* ((context (org-element-context))
+	 (type (org-element-type context)))
+    (when (memq type '(latex-environment latex-fragment))
+      (my-remove-inline-matrix-delimiter (org-element-property :value context))
+      )))
+
+;;;###autoload
+(defun my-org-get-inline-math-prefix ()
+  "Prefix definition for company backend. Returns nil if the
+cursor is no inside a latex fragment. Otherwise, the substring
+between left delimiter and the current cursor is returned."
+  ;; the prefix must be immediately before the pointer
+  ;; first confirm the point is inside a latex-fragment
+  ;; then search-forward for '\\(' and obtain the prefix
+  (interactive
+   let* ((context (org-element-context))
+	 (type (org-element-type context)))
+   (when (eq type 'latex-fragment)
+     (let* ((inline-math (org-element-property :value context))
+	    (inline-math-prefix-point-min (+ (save-excursion (re-search-backward (rx "\\("))) 2)))
+       (buffer-substring-no-properties inline-math-prefix-point-min (point))))))
+
+;;;###autoload
+(defun my-org-get-all-inline-math ()
+  "Store all inline math LaTeX fragments in the `inline-math-candidates'"
+  (interactive)
+  (progn
+    (save-excursion (progn (setq inline-math-candidates nil)
+			   (goto-char (point-min))
+			   (while (re-search-forward
+				   (rx (not "=") "\\(")
+				   (point-max) t)
+			     (add-to-list 'inline-math-candidates (my-org-get-inline-math))
+			     ))))
+  inline-math-candidates)
+
+;;;###autoload
+(defun my-remove-inline-matrix-delimiter (str)
+  "Given the value of a LaTeX fragment org element, remove its
+delimiters to make it an appropriate candidate for completion."
+  (string-remove-prefix "\\("
+			(string-remove-suffix "\\)"
+					      str)))
+
+;;;###autoload
+(defun company-inline-math-backend (command &optional arg &rest ignored)
+  "The company backend for completing inline math LaTeX
+fragments.  The candidates are obtained by trasversing all LaTeX
+fragments in the org buffer"
+  (interactive (list 'interactive))
+  (cl-case command
+    (interactive (company-begin-backend 'company-inline-math-backend))
+    (prefix (and (eq major-mode 'org-mode)
+		 (my-org-get-inline-math-prefix)))
+    (candidates
+     (cl-remove-if-not
+      (lambda (str) (string-prefix-p arg str))
+      (progn (my-org-get-all-inline-math)
+	     inline-math-candidates)))))
+
+(add-to-list 'company-backends #'company-inline-math-backend)
+
+;;;###autoload
+(defun my-select-inline-math ()
+  "Complete inline math and insert."
+  (interactive)
+  (insert (try-completion "Select inline math: "
+			  (progn (my-org-get-all-inline-math)
+				 inline-math-candidates)
+			  nil t)))
+
+
+#+end_src
+
+#+RESULTS:
+: my-select-inline-math
+
+** lsp
+
+#+begin_src emacs-lisp
+(use-package lsp-mode
+  :config
+  (setq lsp-headerline-breadcrumb-enable nil))
+
+(use-package lsp-ui)
+#+end_src
+#+RESULTS:
+
+** dwim compile
+
+#+begin_src emacs-lisp
+(defun arche/recompile-dwim ()
+  (interactive)
+  (let
+      ((cur (selected-window))
+       (w (get-buffer-window "*compilation*" t)))
+    (if (derived-mode-p 'prog-mode) (save-buffer))
+    (select-window w)
+    (recompile)
+    (select-window cur)))
+#+end_src
+
+#+RESULTS:
+: arche/recompile-dwim
+
+** golden-ratio
+
+#+begin_src emacs-lisp
+(use-package golden-ratio)
+#+end_src
+
+#+RESULTS:
+
+** tab
+
+#+begin_src emacs-lisp
+(global-set-key (kbd "M-j") #'tab-to-tab-stop)
+(setq-default indent-tabs-mode nil)
+#+end_src
+
+#+RESULTS:
+
+** toc-org
+
+#+begin_src emacs-lisp
+(use-package toc-org)
+#+end_src
+
+#+RESULTS:
+
+** ob-async
+
+#+begin_src emacs-lisp
+(use-package ob-async)
+#+end_src
+
+#+RESULTS:
+
+** map hard keys
+
+#+begin_src emacs-lisp
+(global-set-key (kbd "H-r") "`")
+(global-set-key (kbd "H-t") "~")
+(global-set-key (kbd "H-f") "\\")
+#+end_src
+
+#+RESULTS:
+: \
+
+** transparency
+
+#+begin_src emacs-lisp
+(defun transparency (value)
+  "Set transparency value."
+  (interactive "ntransparency value 0 - 100 opaque:")
+ (set-frame-parameter (selected-frame) 'alpha value))
+#+end_src
+
+#+RESULTS:
+: transparency
+
+** plz
+
+#+begin_src emacs-lisp
+(use-package plz
+  :straight (:type git :host github :repo "alphapapa/plz.el"))
+#+end_src
+
+#+RESULTS:
+
+** visual-regexp
+
+#+begin_src emacs-lisp
+(use-package visual-regexp)
+#+end_src
+
+#+RESULTS:
+
+** valign
+
+#+begin_src emacs-lisp
+(use-package valign
+  :config
+  (add-hook 'org-mode-hook #'valign-mode))
+#+end_src
+
+#+RESULTS:
+: t
+
+** eval subtree in org-mode
+
+#+begin_src emacs-lisp
+(defun eval-subtree ()
+  "Evaluate all emacs-lisp blocks in the subtree"
+  (interactive)
+  (progn
+    (call-interactively #'consult-imenu)
+    (org-narrow-to-subtree)
+      (while (org-next-block 1)
+	(if (string-equal "emacs-lisp" (plist-get (cadr (org-element-at-point)) :language))
+	    (org-ctrl-c-ctrl-c)))
+      (widen)))
+#+end_src
+
+#+RESULTS:
+: eval-subtree

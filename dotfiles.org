@@ -84,6 +84,7 @@ clear mod1
 clear mod3
 keycode 66 = Control_L
 keycode 37 = Caps_Lock
+keycode 105 = Hyper_R
 add control = Control_L
 add lock = Caps_Lock
 add mod1 = Alt_L Alt_R
@@ -382,7 +383,7 @@ config.set('content.javascript.enabled', True, 'qute://*/*')
 ** proxy
 
 #+begin_src python
-c.content.proxy = 'http://127.0.0.1:7890'
+# c.content.proxy = 'http://127.0.0.1:7890'
 #+end_src
 
 ** zoom ratios
@@ -821,7 +822,7 @@ Do not jump across groups."
 (define-key *top-map* (kbd "s-a") "alacritty")
 #+end_src
 
-* pjassword management and encryption
+* password management and encryption
 
 ** gpg agent
 :PROPERTIES:
@@ -962,8 +963,14 @@ See [[https://github.com/atlas-engineer/nyxt/issues/1449][related issue]].
 #+begin_src org
 #+latex_header:\usepackage[margin=2.5cm]{geometry}
 #+latex_header:\usepackage{amsthm}
+#+latex_header:\usepackage{physics}
+## it seems that xcolor is used by tcolorbox
+#+latex_header:\usepackage{tcolorbox}
 #+latex_header:\newtheorem{theorem}{Theorem}[section]
 #+latex_header:\newtheorem{definition}{Definition}
+#+latex_header:\newtheorem{mexample}{Example}
+#+latex_header:\newtheorem{proposition}{Proposition}
+#+latex_header:\newtheorem{fact}{Fact}
 #+latex_header:\newtheorem{corollary}{Corollary}[theorem]
 #+latex_header:\newtheorem{lemma}[theorem]{Lemma}
 #+end_src
@@ -1061,6 +1068,7 @@ myConfig = def
   -- M means the modifier key assigned for XMonad
   -- which violates the Emacs convention
   [ ("M-e",   runOrRaiseNext "emacs"                   (className =? "Emacs"))
+  , ("M-c", spawn "emacsclient -c --eval '(telega)'")
   , ("M-C-e", spawn "emacsclient -c")
   , ("M-q",   runOrRaiseNext "qutebrowser"             (className =? "qutebrowser"))
   , ("M-C-j", runOrRaiseNext "GDK_SCALE=2 GTK_THEME=Materia-dark-compact xournalpp"  (className =? "Xournalpp"))

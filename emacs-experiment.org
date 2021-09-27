@@ -51,6 +51,12 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
 (setq warning-minimum-log-level :error)
 #+end_src
 
+** faster confirmation
+
+#+begin_src emacs-lisp
+(fset 'yes-or-no-p 'y-or-n-p)
+#+end_src
+
 ** package management with straight.el
 
 #+begin_src emacs-lisp
@@ -99,6 +105,24 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
   "find file in home directory"
   (interactive)
   (find-file (read-file-name "Find file: " "~/")))
+
+(defun copy-buffer-file-name-as-kill (choice)
+  "Copy the buffer-file-name to the kill-ring"
+  (interactive "cCopy Buffer Name (F) Full, (D) Directory, (N) Name")
+  (let ((new-kill-string)
+        (name (if (eq major-mode 'dired-mode)
+                  (dired-get-filename)
+                (or (buffer-file-name) ""))))
+    (cond ((eq choice ?f)
+           (setq new-kill-string name))
+          ((eq choice ?d)
+           (setq new-kill-string (file-name-directory name)))
+          ((eq choice ?n)
+           (setq new-kill-string (file-name-nondirectory name)))
+          (t (message "Quit")))
+    (when new-kill-string
+      (message "%s copied" new-kill-string)
+      (kill-new new-kill-string))))
 #+end_src
 
 *** lisp editing
@@ -229,6 +253,12 @@ emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experi
   (setq aw-keys
 	(list ?a ?s ?d ?f ?j ?k ?l ?q ?w ?e ?r ?x ?c ?v))
   (global-set-key (kbd "M-o") #'ace-window))
+#+end_src
+
+*** golden-ratio
+
+#+begin_src emacs-lisp
+(use-package golden-ratio)
 #+end_src
 
 *** Bufler
@@ -495,7 +525,7 @@ Without prefix arg, toggle eshell. Otherwise the behavior is the same as `eshell
 *** fonts
 
 #+begin_src emacs-lisp
-(set-face-attribute 'default nil :family "Victor Mono" :weight 'normal :height 140)
+(set-face-attribute 'default nil :family "Victor Mono" :weight 'normal :height 120)
 (set-face-attribute 'fixed-pitch nil :family "Iosevka")
 (set-face-attribute 'variable-pitch nil :family "Iosevka Fixed")
 (setq-default line-spacing 0.1)
@@ -513,6 +543,16 @@ Without prefix arg, toggle eshell. Otherwise the behavior is the same as `eshell
 *** theme
 
 #+begin_src emacs-lisp
+(defun arche/load-theme (theme)
+  "Disable active themes and load THEME.
+Taken from alphapapa's answer
+https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
+  (interactive (list (intern (completing-read "Theme: "
+                                              (->> (custom-available-themes)
+                                                   (-map #'symbol-name))))))
+  (mapc #'disable-theme custom-enabled-themes)
+  (load-theme theme 'no-confirm))
+
 (use-package modus-themes
   :config
   (setq modus-themes-org-blocks 'gray-background)
@@ -817,10 +857,11 @@ Without prefix arg, toggle eshell. Otherwise the behavior is the same as `eshell
    '("k" . meow-prev))
 
   (meow-leader-define-key
-   '("a" . org-agenda-list)
+   '("a" . avy-goto-line)
+   '("A" . org-agenda-list)
    '("b" . arche/open-pdf-in-library)
    '("c" . meow-keypad-start)
-   '("C" . find-file-in-emacs-config)
+   '("C" . org-capture)
    '("d" . arche/find-in-home)
    '("e" . arche/toggle-eshell)
    '("f" . org-roam-node-find)
@@ -896,7 +937,7 @@ Without prefix arg, toggle eshell. Otherwise the behavior is the same as `eshell
    '("t" . meow-till)
    '("T" . meow-till-expand)
    '("a" . meow-insert)
-   '("s" . meow-visit)
+   '("s" . avy-goto-char-2)
    '("f" . meow-find)
    '("F" . meow-find-expand)
    '("d" . meow-kill)
@@ -945,6 +986,23 @@ Without prefix arg, toggle eshell. Otherwise the behavior is the same as `eshell
    '("%" . meow-query-replace-regexp)
    '("'" . jump-to-register)
    '("\\" . quoted-insert)))
+
+(defun meow--bounds-of-round-parens ()
+  (meow--bounds-of-regexp "("))
+
+(defun arche/meow--bounds-of-org-elem ()
+  (let ((elem-prop (cadr (org-element-context))))
+    (if elem-prop (cons
+		   (plist-get elem-prop :begin)
+		   (plist-get elem-prop :end))
+      nil)))
+
+(defun arche/meow--inner-of-org-elem ()
+  (let ((bounds (arche/meow--bounds-of-org-elem)))
+    (cons (+ 2 (car bounds)) (- (cdr bounds) 2))))
+
+(meow--thing-register 'org-elem #'arche/meow--inner-of-org-elem #'arche/meow--bounds-of-org-elem)
+(add-to-list 'meow-char-thing-table (cons ?o 'org-elem))
 #+end_src
 
 *** focused writing
@@ -1001,7 +1059,12 @@ Add guix system program path:
 #+begin_src emacs-lisp
 (use-package org-bullets :after org)
 (use-package org-fragtog :after org :straight nil)
-(use-package cdlatex :straight nil)
+(use-package cdlatex
+  :straight nil
+  :config
+  ;; TODO: set cdlatex-command-alist-default
+  (setq cdlatex-math-modify-alist
+	'((98 "\\mathbb" "\\textbf" t nil nil))))
 (use-package valign
   :after org
   :config
@@ -1030,7 +1093,7 @@ Add guix system program path:
   (setq org-ellipsis " ▾")
   (setq org-capture-bookmark nil)
   (setq org-image-actual-width nil)
-  (plist-put org-format-latex-options :scale 4))
+  (plist-put org-format-latex-options :scale 2.4))
 #+end_src
 
 *** window rules
@@ -1065,6 +1128,8 @@ Add guix system program path:
           ("r" "read later" checkitem
            (file+headline "read-later.org" "Inbox")
            "[ ] %? ")
+	  ("b" "Journal" entry (file+datetree "~/org/bits-of-life.org")
+              "* %?\nEntered on %U\n  %i\n")
 	  ;; TODO capture template for wordnut-buffer
           ("w" "word" plain
 	   (file+headline "words.org" "Inbox")
@@ -1181,7 +1246,8 @@ In order to support citation in (latex->pdf) process:
 		   :repo "org-roam/org-roam-ui"
 		   :branch "main"
 		   :files ("*.el" "out"))
-  :after org-roam)
+  :after org-roam
+  :config (setq org-roam-ui-sync-theme nil))
 #+end_src
 
 *** finishing setup
@@ -1407,9 +1473,6 @@ fragments in the org buffer"
 	  (message "hello")
 	  (find-file pdf-file))
 	(message "book not found :)")))) 
-
-
-
 
 #+end_src
 
@@ -1707,6 +1770,7 @@ cite:book:2387878
  #+begin_src emacs-lisp
 (use-package bibtex-completion)
 (use-package citeproc)
+(defvar my/bibs '("~/library/hcimu.bib"))
 
 (use-package oc-bibtex-actions
   :straight (:host github
@@ -1715,10 +1779,29 @@ cite:book:2387878
   :bind (("C-c b" . org-cite-insert))
   :after (embark org bibtex-completion citeproc)
   :config
-  (setq bibtex-actions-bibliography '("~/library/hcimu.bib"))
+  (define-key minibuffer-local-map (kbd "M-b") #'bibtex-actions-insert-preset)
+  (setq bibtex-actions-bibliography my/bibs)
+  (setq bibtex-actions-bibliography my/bibs
+        org-cite-global-bibliography my/bibs
+        org-cite-insert-processor 'oc-bibtex-actions
+        org-cite-follow-processor 'oc-bibtex-actions
+        org-cite-activate-processor 'basic)
   (advice-add #'completing-read-multiple :override #'consult-completing-read-multiple)
+  (setq bibtex-actions-at-point-function 'embark-act)
+  ;; Make the 'bibtex-actions' bindings and targets available to `embark'.
+  (add-to-list 'embark-target-finders 'bibtex-actions-citation-key-at-point)
+  (add-to-list 'embark-keymap-alist '(bib-reference . bibtex-actions-map))
+  (add-to-list 'embark-keymap-alist '(citation-key . bibtex-actions-buffer-map))
   (setq bibtex-actions-at-point-function 'embark-act))
+
+(require 'bibtex-actions-file)
+(require 'oc-bibtex-actions)
 #+end_src
+
+#+RESULTS:
+: oc-bibtex-actions
+
+[cite:@book:1309822]
 
 ** TODO org contrib with straight?
 
@@ -1772,14 +1855,6 @@ Version 2017-05-24"
 
 #+RESULTS:
 : (( . ~/.config/emacs-experiment/backup/))
-
-** golden-ratio
-
-#+begin_src emacs-lisp
-(use-package golden-ratio)
-#+end_src
-
-#+RESULTS:
 
 ** tab
 
@@ -1877,3 +1952,41 @@ Version 2017-05-24"
   (async-shell-command
    (concat "kdeconnect-cli -n " device " --share-text \"" (read-string (concat "Send text to " device ": ")) "\"")))
 #+end_src
+
+** dos2unix
+
+#+begin_src emacs-lisp
+(defun dos2unix (buffer)
+  "Automate M-% C-q C-m RET C-q C-j RET"
+  (interactive "*b")
+  (save-excursion
+    (goto-char (point-min))
+    (while (search-forward (string ?\C-m) nil t)
+      (replace-match (string ?\C-j) nil t))))
+#+end_src
+
+#+RESULTS:
+: dos2unix
+
+** asy
+
+#+begin_src emacs-lisp
+(add-to-list 'org-babel-load-languages (cons 'asymptote t))
+#+end_src
+
+#+RESULTS:
+: ((asymptote . t) (python . t) (scheme . t) (haskell . t) (C . t) (shell . t) (maxima . t) (emacs-lisp . t))
+
+** epub
+
+#+begin_src emacs-lisp
+(use-package nov
+  :config
+  ;; tip: never use toc (t), use imenu instead!
+  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+  :hook
+  (nov-mode . variable-pitch-mode))
+#+end_src
+
+#+RESULTS:
+| variable-pitch-mode |

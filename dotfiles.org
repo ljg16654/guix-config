@@ -1,4 +1,4 @@
-#+title: dotfiles
+#+TITLE: dotfiles
 #+STARTUP: content
 
 * xmodmap
@@ -75,20 +75,19 @@ keycode  56 = b B grave U03B2
 keycode  57 = n N U03BD U039D
 keycode  58 = m M U03BC U039C
 #+end_src
-** hyper key, reset modifiers and locks
+
+* hyper key, reset modifiers and locks
 
 #+begin_src fundamental
 clear control
 clear lock
 clear mod1
-clear mod3
 keycode 66 = Control_L
 keycode 37 = Caps_Lock
-keycode 105 = Hyper_R
+keycode 105 = grave asciitilde
 add control = Control_L
 add lock = Caps_Lock
 add mod1 = Alt_L Alt_R
-add mod3 = Hyper_R
 #+end_src
 
 * alacritty
@@ -101,7 +100,7 @@ add mod3 = Hyper_R
 #+begin_src yaml
 font:
   # The size to use.
-  size: 18
+  size: 13
   # The normal (roman) font face to use.
   normal:
     family: Victor Mono
@@ -389,8 +388,8 @@ config.set('content.javascript.enabled', True, 'qute://*/*')
 ** zoom ratios
 
 #+begin_src python
-c.zoom.default = '225%'
-c.zoom.levels = ["50%", "100%", "150%", "200%", "225%", "250%", "300%", "350%"]
+c.zoom.default = '175%'
+c.zoom.levels = ["50%", "100%", "150%", "175%", "200%", "225%", "250%", "300%", "350%"]
 #+end_src
 
 ** dealing with sessions and windows
@@ -751,7 +750,7 @@ c.colors.tabs.selected.odd.fg = nord['nord5']
 
 #+begin_src python
 c.fonts.default_family = "Victor Mono"
-c.fonts.default_size = "13pt"
+c.fonts.default_size = "11pt"
 c.fonts.web.family.cursive = "Victor Mono"
 c.fonts.web.family.fantasy= "Victor Mono"
 c.fonts.web.family.fixed = "Victor Mono"
@@ -975,6 +974,56 @@ See [[https://github.com/atlas-engineer/nyxt/issues/1449][related issue]].
 #+latex_header:\newtheorem{lemma}[theorem]{Lemma}
 #+end_src
 
+* xsession
+:PROPERTIES:
+:header-args: :tangle ~/.xsession
+:END:
+
+#+begin_src sh
+#!/bin/sh
+xmodmap ~/.Xmodmap
+
+# Source .profile for common environment vars
+. ~/.profile
+
+xrdb -merge ~/.Xresources
+
+redshift -l 42:-83 &
+
+# Disable access control for the current user
+xhost +SI:localuser:$USER
+# xhost +
+
+# Make Java applications aware this is a non-reparenting window manager
+export GTK_IM_MODULE="ibus"
+export QT_IM_MODULE="ibus"
+export XMODIFIERS="@im=ibus"
+
+export GUIX_GTK2_IM_MODULE_FILE=/run/current-system/profile/lib/gtk-2.0/2.10.0/immodules-gtk2.cache
+export GUIX_GTK3_IM_MODULE_FILE=/run/current-system/profile/lib/gtk-3.0/3.0.0/immodules-gtk3.cache
+export GDK_SCALE=2
+export GTK_THEME=Materia-dark-compact
+
+# Start Shepherd to manage user daemons
+if [ -z "$(pgrep -u nil shepherd)" ]; then
+  shepherd
+fi
+
+feh --bg-fill ~/Pictures/wallpaper/jaguar-956516.jpg
+
+# Enable screen compositing
+compton --config ~/.config/compton/compton.conf &
+
+# Fire it up
+# exec dbus-launch emacs -mm --debug-init
+# exec stumpwm
+# exec guile-wm
+ 
+ibus-daemon --xim --replace --daemonize &
+# exec --no-startup-id fcitx5 -d &
+exec xmonad
+#+end_src
+
 * xmonad
 :PROPERTIES:
 :header-args: :tangle ~/.xmonad/xmonad.hs
@@ -1026,6 +1075,7 @@ myXmobarPP = def
   -- , ppCurrent = getName
   -- , ppCurrent = \tag -> (fromMaybe "" (liftX (getWorkspaceName tag)))
   , ppLayout = (\x -> "") -- do not display the layout
+  , ppTitle = \s -> ""   -- do not display the title
   , ppExtras = [getCurrentWorkspaceName]
   }
   where
@@ -1120,7 +1170,7 @@ scratchpads = [ NS "default" "alacritty -t default"
 :END:
 
 #+begin_src haskell
-Config { font = "xft:victormono-12"
+Config { font = "xft:victormono-10"
   -- , -- font = "-misc-fixed-*-*-*-*-30-*-*-*-*-*-*-*"
        , additionalFonts = []
        , borderColor = "black"
@@ -1164,8 +1214,8 @@ Config { font = "xft:victormono-12"
                     ]
        , sepChar = "%"
        , alignSep = "}{"
-       , template = "%StdinReader% }{ %battery% | %disku% | %default:Master% | %cpu% | %memory% | %wlp0s20f3% |\
-                    \ <fc=#ee9a00>%date%</fc> | %kbd% | %uname%"
+       , template = "%StdinReader% } { %battery% | %disku% | %default:Master% | %cpu% | %memory% | %wlp0s20f3% |\
+                    \ <fc=#ee9a00>%date%</fc>"
        }
 #+end_src
 

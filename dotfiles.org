@@ -76,7 +76,7 @@ keycode  57 = n N U03BD U039D
 keycode  58 = m M U03BC U039C
 #+end_src
 
-* hyper key, reset modifiers and locks
+** hyper key, reset modifiers and locks
 
 #+begin_src fundamental
 clear control
@@ -135,12 +135,15 @@ window:
 
 *** nord
 
+But the background is just black.
+
 #+begin_src yaml
 background_opacity: 0.9
 
 colors:
   primary:
-    background: '#2e3441'
+    # background: '#2e3441'
+    background: "#000000"
     foreground: '#eceff1'
     dim_foreground: '#a5abb6'
   cursor:
@@ -965,8 +968,11 @@ See [[https://github.com/atlas-engineer/nyxt/issues/1449][related issue]].
 #+latex_header:\usepackage{physics}
 ## it seems that xcolor is used by tcolorbox
 #+latex_header:\usepackage{tcolorbox}
+#+latex_header:\usepackage{mathtools}
+#+latex_header:\usepackage{bbold}
 #+latex_header:\newtheorem{theorem}{Theorem}[section]
 #+latex_header:\newtheorem{definition}{Definition}
+#+latex_header:\newtheorem{remark}{Remark}
 #+latex_header:\newtheorem{mexample}{Example}
 #+latex_header:\newtheorem{proposition}{Proposition}
 #+latex_header:\newtheorem{fact}{Fact}
@@ -1028,6 +1034,7 @@ exec xmonad
 :PROPERTIES:
 :header-args: :tangle ~/.xmonad/xmonad.hs
 :END:
+** import modules
 
 #+begin_src haskell
 import Data.Ratio
@@ -1040,8 +1047,11 @@ import XMonad.Util.Scratchpad
 import XMonad.Layout.Hidden
 import XMonad.Layout.Gaps
 import XMonad.Layout.Spacing(smartSpacing)
+import XMonad.Layout.Accordion
+import XMonad.Layout.Circle
 -- https://hackage.haskell.org/package/xmonad-contrib-0.13/docs/XMonad-Actions-WindowGo.html
 import XMonad.Actions.CycleWS
+import XMonad.Actions.DwmPromote
 import XMonad.Actions.DynamicWorkspaceOrder as DO
 import XMonad.Actions.WindowGo(runOrRaise, runOrRaiseNext)
 import XMonad.Actions.PhysicalScreens(onPrevNeighbour, onNextNeighbour)
@@ -1051,6 +1061,12 @@ import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.EwmhDesktops
 import Data.Maybe
 
+#+end_src
+
+** IO monad
+
+#+begin_src haskell
+  
 main :: IO ()
 main = xmonad
        . ewmh
@@ -1060,20 +1076,17 @@ main = xmonad
   where
     toggleStructsKey :: XConfig Layout -> (KeyMask, KeySym)
     toggleStructsKey XConfig{ modMask = m } = (m, xK_b)
+#+end_src
 
+** communicating with xmobar
 
-getName tag = maybe "" (" " ++) <$> getWorkspaceName tag
+#+begin_src haskell
   
 -- https://xmonad.github.io/xmonad-docs/xmonad-contrib/XMonad-Hooks-DynamicLog.html#t:PP  
 myXmobarPP :: PP
 myXmobarPP = def
   { ppSep = magenta " • "
   , ppCurrent = wrap (blue "[") (blue "]")
-  -- , ppCurrent = (\str -> wrap (blue "[") (blue "]") (str ++ (myGetName str)))
-  -- , ppCurrent = xmobarColor "green" "" . wrap "[" "]" . liftM (fromMaybe "") . getWorkspaceName
-  -- , ppCurrent = \tag -> getWorkspaceName tag >>= fromMaybe "" . liftX . xmobarColor "green" "" . wrap "[" "]"
-  -- , ppCurrent = getName
-  -- , ppCurrent = \tag -> (fromMaybe "" (liftX (getWorkspaceName tag)))
   , ppLayout = (\x -> "") -- do not display the layout
   , ppTitle = \s -> ""   -- do not display the title
   , ppExtras = [getCurrentWorkspaceName]
@@ -1081,33 +1094,13 @@ myXmobarPP = def
   where
     magenta  = xmobarColor "#ff79c6" ""
     blue     = xmobarColor "#bd93f9" ""
-    
-  --  { ppSep             = magenta " • "
-  --   , ppTitleSanitize   = xmobarStrip
-  --   , ppCurrent = wrap (blue "[") (blue "]")
-  --   , ppHidden          = white . wrap " " ""
-  --   , ppHiddenNoWindows = lowWhite . wrap " " ""
-  --   , ppUrgent          = red . wrap (yellow "!") (yellow "!")
-  --   , ppOrder           = \[ws, l, _, wins] -> [ws, l, wins]
-  --   -- , ppExtras          = [formatFocused formatUnfocused]
-  --   }
-  -- where
-  --   formatFocused   = wrap (white    "[") (white    "]") . magenta . ppWindow
-  --   formatUnfocused = wrap (lowWhite "[") (lowWhite "]") . blue    . ppWindow
 
-  --   -- | Windows should have *some* title, which should not not exceed a
-  --   -- sane length.
-  --   ppWindow :: String -> String
-  --   ppWindow = xmobarRaw . (\w -> if null w then "untitled" else w) . shorten 30
+#+end_src
 
-  --   blue, lowWhite, magenta, red, white, yellow :: String -> String
-  --   magenta  = xmobarColor "#ff79c6" ""
-  --   blue     = xmobarColor "#bd93f9" ""
-  --   white    = xmobarColor "#f8f8f2" ""
-  --   yellow   = xmobarColor "#f1fa8c" ""
-  --   red      = xmobarColor "#ff5555" ""
-  --   lowWhite = xmobarColor "#bbbbbb" ""
+** config
 
+#+begin_src haskell
+  
 myConfig = def
   { modMask = mod4Mask -- rebind Mod to the super key
   , terminal = "alacritty"
@@ -1133,6 +1126,7 @@ myConfig = def
   , ("M-r", renameWorkspace def)
   , ("M-<Left>", swapTo Prev)
   , ("M-<Right>", swapTo Next)
+  , ("M-;", dwmpromote)
   , ("M-g", sendMessage $ ToggleGaps)
   , ("<F1> w", spawn "gnome-screenshot -w")
   , ("<F1> a", spawn "gnome-screenshot -a")
@@ -1141,12 +1135,18 @@ myConfig = def
   , ("<XF86AudioRaiseVolume>", spawn "amixer set Master 5%+ unmute")
     ]
   `removeKeysP`
-  [ "M-m", "M-n", "M-w" ]
+  [ "M-n", "M-w" ]
+#+end_src
+
+** TODO layouts and scratchpad
  
+#+begin_src haskell
 myLayout = smartSpacing 10
            $ gaps [(U, 50), (R, 50), (L, 50), (D, 50)]
            $ hiddenWindows
            $ tiled
+           ||| Accordion
+           ||| Circle
            ||| Full
   where
     tiled   = Tall nmaster delta ratio
@@ -1253,5 +1253,5 @@ set -g mouse on
 ** history length
 
 #+begin_src sh :eval never
-set -g history-length 9999
+set -g history-limit 9999
 #+end_src

@@ -4,124 +4,137 @@
 * base configuration
 
 #+begin_src scheme :tangle config.scm
-(use-modules (gnu) 
-	     (gnu system nss) 
-	     (gnu packages emacs)
-	     (gnu packages text-editors)
-	     (gnu packages certs) 
-	     (gnu packages version-control)
-	     (gnu packages shells)
-	     (gnu packages tmux)
-	     (gnu packages admin)
-	     (gnu packages linux)
-	     (gnu packages audio)
-	     (gnu packages pulseaudio)
-	     (gnu packages rsync)
-	     (gnu packages compression)
-	     (gnu packages rust-apps)
-	     (gnu packages curl)
-	     ;; (gnu packages gnupg)
-	     (gnu packages ncurses)
-	     (gnu packages ssh)
-	     (gnu packages password-utils)
-	     (gnu packages tor)
-	     (gnu services ssh)
-	     (gnu services xorg)
-	     (gnu services desktop)
-	     (gnu services networking)
-	     (gnu services sound)
-	     (gnu services docker)
-)
+  (use-modules (gnu)
+	       (srfi srfi-1)
+	       (gnu system nss) 
+	       (gnu packages emacs)
+	       (gnu packages text-editors)
+	       (gnu packages certs) 
+	       (gnu packages version-control)
+	       (gnu packages shells)
+	       (gnu packages tmux)
+	       (gnu packages admin)
+	       (gnu packages linux)
+	       (gnu packages audio)
+	       (gnu packages pulseaudio)
+	       (gnu packages rsync)
+	       (gnu packages compression)
+	       (gnu packages rust-apps)
+	       (gnu packages curl)
+	       (gnu packages xorg)
+	       ;; (gnu packages gnupg)
+	       (gnu packages ncurses)
+	       (gnu packages ssh)
+	       (gnu packages password-utils)
+	       (gnu packages tor)
+	       (gnu services ssh)
+	       (gnu services xorg)
+	       (gnu services desktop)
+	       (gnu services networking)
+	       (gnu services sound)
+	       (gnu services docker)
+	       )
+  
+  ;; import nonfree linux module
+  (use-modules (nongnu packages linux)
+	       (nongnu system linux-initrd))
+  
+  (operating-system
+   ;; using nonfree linux module
+   (kernel linux)
+   (initrd microcode-initrd)
+   (firmware (list linux-firmware))
+   (host-name "mafty")
+   (timezone "America/Detroit")
+   (keyboard-layout (keyboard-layout "us"))
+   (locale "en_US.utf8")
 
-;; import nonfree linux module
-(use-modules (nongnu packages linux)
-	     (nongnu system linux-initrd))
+   (users (cons (user-account
+		 (name "nil")
+		 (comment "Empty brain.")
+		 (group "users")
+		 (shell (file-append zsh "/bin/zsh"))
+		 (supplementary-groups '("wheel"  	;; sudo
+					 "netdev" 	;; network devices
+					 "docker"
+					 "audio"
+					 "realtime"
+					 "tty"
+					 "lp"		;; bluetooth
+					 "video")))
+		%base-user-accounts))
 
-(operating-system
- ;; using nonfree linux module
- (kernel linux)
- (initrd microcode-initrd)
- (firmware (list linux-firmware))
- (host-name "mafty")
- (timezone "America/Detroit")
- (keyboard-layout (keyboard-layout "us"))
- (locale "en_US.utf8")
-
- (users (cons (user-account
-               (name "nil")
-               (comment "Empty brain.")
-               (group "users")
-	       (shell (file-append zsh "/bin/zsh"))
-               (supplementary-groups '("wheel"  	;; sudo
-				       "netdev" 	;; network devices
-				       "docker"
-                                       "audio"
-				       "lp"		;; bluetooth
-				       "video")))
-              %base-user-accounts))
-
- (packages (append (list
-		    acpi
-		    bat
-		    bluez
-		    bluez-alsa
-		    curl
-		    emacs
-		    kakoune
-		    fd
-		    fish
-		    git
-		    htop
-		    gnu-make
-		    ncurses
-		    nss-certs ;; for HTTPS access
-		    openssh
-		    password-store
-		    pulseaudio
-		    ripgrep
-		    rsync
-		    tree
-		    unzip
-		    tmux
-		    zip
-		    zsh
-		    )
-                   %base-packages))
-
- ;; Add GNOME and Xfce---we can choose at the log-in screen
- ;; by clicking the gear.  Use the "desktop" services, which
- ;; include the X11 log-in service, networking with
- ;; NetworkManager, and more.
- (services (cons*
-	    (service slim-service-type)
-	    (service tor-service-type)
-	    (extra-special-file "/usr/bin/env"
-			
-	(file-append coreutils "/bin/env"))
-	    ;; (service alsa-service-type)
-	    (service docker-service-type)
-	    (bluetooth-service #:auto-enable? #t)
-	    (modify-services %desktop-services
-                             (delete gdm-service-type))
-	    ))
-
- ;; Use the UEFI variant of GRUB with the EFI System
- ;; Partition mounted on /boot/efi.
- (bootloader (bootloader-configuration
-              (bootloader grub-efi-bootloader)
-              (target "/boot/efi")
-              (keyboard-layout keyboard-layout)))
-
- (file-systems (append
-                (list (file-system
-                       (device "/dev/nvme0n1p1")
-                       (mount-point "/")
-                       (type "ext4"))
-                      (file-system
-                       (device "/dev/nvme1n1p2")
-                       (mount-point "/boot/efi")
-                       (type "vfat")))
-                %base-file-systems)))
+   (groups (cons (user-group (system? #t) (name "realtime"))
+		 %base-groups))
+  
+   (packages (append (list
+		      acpi
+		      bat
+		      bluez
+		      bluez-alsa
+		      curl
+		      emacs
+		      kakoune
+		      fd
+		      fish
+		      git
+		      htop
+		      gnu-make
+		      ncurses
+		      nss-certs ;; for HTTPS access
+		      openssh
+		      password-store
+		      pulseaudio
+		      ripgrep
+		      rsync
+		      tree
+		      unzip
+		      tmux
+		      zip
+		      zsh
+		      xorg-server
+		      xinit
+		      )
+		     %base-packages))
+  
+   ;; Add GNOME and Xfce---we can choose at the log-in screen
+   ;; by clicking the gear.  Use the "desktop" services, which
+   ;; include the X11 log-in service, networking with
+   ;; NetworkManager, and more.
+   (services (cons*
+	      (service slim-service-type)
+	      (service tor-service-type)
+	      (extra-special-file "/usr/bin/env"
+				  (file-append coreutils "/bin/env"))
+	      ;; (service alsa-service-type)
+	      (service docker-service-type)
+	      (pam-limits-service
+	       (list
+		(pam-limits-entry "@realtime" 'both 'rtprio 99)
+		(pam-limits-entry "@realtime" 'both 'memlock 'unlimited)))
+	      (bluetooth-service #:auto-enable? #t)
+	      ;; %desktop-services
+	      (modify-services %desktop-services
+			       (delete gdm-service-type))
+	      ))
+  
+   ;; Use the UEFI variant of GRUB with the EFI System
+   ;; Partition mounted on /boot/efi.
+   (bootloader (bootloader-configuration
+		(bootloader grub-efi-bootloader)
+		(target "/boot/efi")
+		(keyboard-layout keyboard-layout)))
+  
+   (file-systems (append
+		  (list (file-system
+			 (device "/dev/nvme0n1p1")
+			 (mount-point "/")
+			 (type "ext4"))
+			(file-system
+			 (device "/dev/nvme1n1p2")
+			 (mount-point "/boot/efi")
+			 (type "vfat")))
+		  %base-file-systems)))
 #+end_src
 
 * profiles-meta

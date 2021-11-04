@@ -1,10 +1,12 @@
-
+#+title: Emacs experimental config
 
 to run the config:
 
 #+begin_src sh
 emacs-sandbox.sh --no-package --no-refresh-packages --dir ~/.config/emacs-experiment
 #+end_src
+
+#+RESULTS:
 
 #+begin_src scheme :tangle ~/.config/emacs-experiment/emacs-manifest.scm :noweb yes
 (specifications->manifest (list
@@ -19,6 +21,8 @@ to disable configuration in a subtree, refile the subtree to [[experimental]] or
 (("default"   . ((user-emacs-directory . "~/.config/emacs-experiment")))
  ("stable" . ((user-emacs-directory . "~/.config/emacs-stable")))
  ("doom"   . ((user-emacs-directory . "~/.config/emacs-doom")))
+ ("dog" . ((user-emacs-directory . "~/repos/dogEmacs")))
+ ("scimax" . ((user-emacs-directory . "~/repos/scimax")))
  ("mininum"   . ((user-emacs-directory . "~/.config/emacs-mininum"))))
 #+end_src
 
@@ -83,6 +87,7 @@ to disable configuration in a subtree, refile the subtree to [[experimental]] or
 #+end_src
 
 ** elisp
+
 *** libraries
 
 #+begin_src emacs-lisp
@@ -159,11 +164,24 @@ to disable configuration in a subtree, refile the subtree to [[experimental]] or
 #+RESULTS:
 : transparency
 
+** COMMENT key-chord
+
+#+begin_src emacs-lisp
+(use-package key-chord
+  :init
+  (setq key-chord-two-keys-delay 0.1)
+  (setq key-chord-one-key-delay 0.2)
+  :config
+  (key-chord-mode t)
+  )
+#+end_src
+
 ** avy
 
 #+begin_src emacs-lisp
 (use-package avy
   :config
+  (setq avy-timeout-seconds 0.3)
   (setq avy-keys (list ?a ?s ?d ?f ?j ?k ?l ?\;)))
 #+end_src
 
@@ -172,7 +190,9 @@ to disable configuration in a subtree, refile the subtree to [[experimental]] or
 #+begin_src emacs-lisp
 (use-package yasnippet
   :commands yas/global-mode
-  :init (yas/global-mode t))
+  :init (yas/global-mode t)
+  :config
+  (define-key yas-minor-mode-map (kbd "SPC") yas-maybe-expand))
 #+end_src
 
 ** company
@@ -288,7 +308,7 @@ setup 2x2 grid for working on a vertical 27'' 4K screen.
 (use-package ace-window
   :init (ace-window-display-mode t)
   :config
-  (setq aw-scope 'frame)
+  (setq aw-scope 'global)
   (setq aw-keys
 	(list ?j ?k ?l ?\; ?, ?.))
   (global-set-key (kbd "M-o") #'ace-window))
@@ -309,7 +329,8 @@ setup 2x2 grid for working on a vertical 27'' 4K screen.
   :config
   (define-key bufler-list-mode-map (kbd "K") #'bufler-list-buffer-kill)
   (define-key bufler-list-mode-map (kbd "P") #'bufler-list-buffer-peek)
-  (global-set-key (kbd "s-o") #'bufler-switch-buffer)
+  (global-set-key (kbd "s-C-o") #'bufler-switch-buffer)
+  (global-set-key (kbd "s-o") #'switch-to-buffer)
   (setf bufler-groups (bufler-defgroups
 			(group
 			 ;; Subgroup collecting all named workspaces.
@@ -561,13 +582,17 @@ Without prefix arg, toggle eshell. Otherwise the behavior is the same as `eshell
 - [[https://design.ubuntu.com/font/][Ubuntu font]] for variable pitch
 
 #+begin_src emacs-lisp
-(set-face-attribute 'default nil :family "JuliaMono" :weight 'normal :height 150)
-(set-face-attribute 'fixed-pitch nil :family "JuliaMono" :weight 'normal)
+(set-face-attribute 'default nil :family "Iosevka Slab" :weight 'normal :height 150)
+;; (set-face-attribute 'fixed-pitch nil :family "JuliaMono" :weight 'normal)
+(set-face-attribute 'fixed-pitch nil :family "Iosevka" :weight 'normal)
 (set-face-attribute 'variable-pitch nil :family "Ubuntu" :weight 'light)
 (setq-default line-spacing 0.15)
 (add-hook 'org-mode-hook #'(lambda ()
 			     (setq line-spacing 0.15)))
 #+end_src
+
+#+RESULTS:
+| org-krita-mode | flyspell-mode | org-pdftools-setup-link | arche/org-mode-hook | valign-mode | #[0 \300\301\302\303\304$\207 [add-hook change-major-mode-hook org-show-all append local] 5] | #[0 \300\301\302\303\304$\207 [add-hook change-major-mode-hook org-babel-show-result-all append local] 5] | org-babel-result-hide-spec | org-babel-hide-all-hashes | #[0 \301\211\207 [imenu-create-index-function org-imenu-get-tree] 2] | (lambda nil (setq line-spacing 0.15)) |
 
 #+begin_src scheme :noweb-ref guix-packages :noweb-sep ""
 
@@ -596,8 +621,14 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
 (use-package joker-theme
   :straight (:host github :repo "DogLooksGood/joker-theme" :branch "master"))
 
+(use-package notink-theme
+  :straight (:host github :repo "MetroWind/notink-theme" :branch "master"))
+
 (use-package modus-themes
   :config
+  (setq modus-themes-vivendi-color-overrides
+	'((bg-main . "#1d2021")
+	  (fg-main . "#c2c2c2")))
   (setq modus-themes-org-blocks 'gray-background)
   (setq modus-themes-mode-line '3d))
 
@@ -607,100 +638,20 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
   (setq bespoke-set-mode-line nil)
   (setq bespoke-set-theme 'light))
 
+(use-package minimal-theme)
+
+(use-package nano-theme
+  :straight (:host github :repo "rougier/nano-theme" :branch "master"))
+
+(use-package doom-themes)
 (load-theme 'modus-operandi t)
 #+end_src
 
-*** modeline
-
-**** hide mode line
-#+begin_src emacs-lisp
-(use-package hide-mode-line)
-#+end_src
-
-**** custom mode line format
+*** telephone
 
 #+begin_src emacs-lisp
-;;;###autoload
-(defun arche/bib-pdf-get-title ()
-    (let*
-	((my-global-bibtex-file "~/library/hcimu.bib")
-	 (key (file-name-base))
-	 (bibtex-file-live-p (get-buffer (file-name-nondirectory my-global-bibtex-file))))
-      (with-current-buffer (find-file-noselect my-global-bibtex-file)
-	(goto-char (bibtex-find-entry key t))
-	(let ((title (bibtex-autokey-get-field "title")))
-	  (unless bibtex-file-live-p (kill-buffer (current-buffer)))
-	  title))))
-
-;;;###autoload
-(defun arche/mode-line-disp-buffer-name ()
-  "Buffer name displayed in mode-line."
-  (let* ((bn (buffer-name))
-	 (fn (buffer-file-name))
-	 (l (length bn))
-	 (lmax 21)
-	 (lside (floor (/ (- lmax 3) 2))))
-    (cond
-     ((org-roam-node-at-point)
-      (concat " " (org-roam-node-title (org-roam-node-at-point))))
-     ((and (s-prefix? (file-truename "~/library/pdf/") (buffer-file-name))
-	   (equal major-mode 'pdf-view-mode))
-      (concat " " (arche/bib-pdf-get-title)))
-     ((> l lmax) (concat
-		  (s-left lside bn)
-		  "..."
-		  (s-right lside bn)))
-     (t bn))))
-
-;;;###autoload
-(defun +format-mode-line ()
-  (let* ((lhs '((:eval (unless (equal major-mode 'exwm-mode) (meow-indicator)))
-		" "
-		(:eval (window-parameter (selected-window) 'ace-window-path))
-		(:eval (unless (member major-mode '(exwm-mode
-						    pdf-view-mode))
-			 " Row %l "))
-		(:eval (if (equal major-mode 'pdf-view-mode) (format " Page %d/%d "
-								     (pdf-view-current-page)
-								     (pdf-cache-number-of-pages))))
-		(:eval (when (bound-and-true-p flycheck-mode) flycheck-mode-line))
-		(:eval (when (bound-and-true-p flymake-mode)
-			 flymake-mode-line-format))
-		"  "
-		(:eval (arche/mode-line-disp-buffer-name))))
-	 (rhs '((:eval mode-name)
-		(vc-mode vc-mode)))
-	 (ww (window-width))
-	 (lhs-str (format-mode-line lhs))
-	 (rhs-str (format-mode-line rhs))
-	 (rhs-w (string-width rhs-str)))
-    (format "%s%s%s"
-	    lhs-str
-	    (propertize " " 'display `((space :align-to (- (+ right right-fringe right-margin) (+ 1 ,rhs-w)))))
-	    rhs-str))) 
-#+end_src
-
-**** display mode line in header line
-
-#+begin_src emacs-lisp
-(defun arche/setup-lines ()
-  (setq-default mode-line-format nil)
-  (setq-default header-line-format '((:eval (+format-mode-line)))))
-
-(add-hook 'emacs-startup-hook #'arche/setup-lines) 
-
-#+end_src
-
-**** display global mode line content in tab bar
-
-#+begin_src emacs-lisp
-(custom-set-variables '(tab-bar-format
-			'(tab-bar-format-history
-                          tab-bar-format-tabs
-                          tab-bar-separator
-                          tab-bar-format-add-tab
-			  tab-bar-format-align-right
-			  tab-bar-format-global)))
+(use-package telephone-line)
+(telephone-line-mode 1)
 #+end_src
 
 ** minibuffer
@@ -767,6 +718,8 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
 (use-package consult
   :config
   (global-set-key (kbd "M-i") #'consult-imenu))
+
+(use-package consult-dir)
 #+end_src
 
 ** dired
@@ -796,6 +749,33 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
 (use-package dired-narrow
   :config
   (define-key dired-mode-map (kbd "K") 'dired-narrow))
+#+end_src
+
+** tab-bar
+
+#+begin_src emacs-lisp
+(setq tab-bar-new-tab-choice "*scratch*")
+(require 'hydra)
+(defhydra hydra-tab-bar (global-map "C-x t")
+  ("c" tab-bar-new-tab)
+  ("j" tab-bar-switch-to-next-tab)
+  ("k" tab-bar-switch-to-prev-tab)
+  ("x" tab-bar-close-tab)
+  ("o" tab-bar-select-tab-by-name)
+  ("r" tab-bar-rename-tab)
+  ("1" tab-bar-close-other-tabs)
+  ("t" tab-bar-mode))
+#+end_src
+
+[[http://ruzkuku.com/texts/emacs-global.html#fn2][emacs28 global modeline]]
+#+begin_src emacs-lisp
+(setq tab-bar-format
+      '(tab-bar-format-history
+        tab-bar-format-tabs 
+        tab-bar-separator
+        tab-bar-format-add-tab
+	tab-bar-format-align-right
+	tab-bar-format-global))
 #+end_src
 
 ** editing
@@ -828,6 +808,16 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
   (interactive)
   (arche/toggle-input-method "TeX")) 
 #+end_src
+
+*** xah-fly-keys                                                    :ARCHIVE:
+
+#+begin_src emacs-lisp
+(use-package xah-fly-keys
+  :config
+  (xah-fly-keys-set-layout "dvorak")
+  (xah-fly-keys 1))
+#+end_src
+
 
 *** modal editing with meow
 
@@ -868,7 +858,7 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
 			       (geiser-repl-mode . normal)
 			       (eshell-mode . normal)
 			       (shell-mode . normal)
-			       (eshell-mode . normal)
+ 			       (eshell-mode . normal)
 			       (vterm-mode . normal)
 			       (json-mode . normal)
 			       (pass-view-mode . normal)
@@ -887,11 +877,11 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
 	      (cons 'insert "(=ⒾωⒾ=)")))
 
   (set-face-attribute 'meow-normal-indicator nil
-		      :foreground (face-attribute 'mode-line :background)
-		      :background (face-attribute 'default :foreground))
+		      :foreground (face-attribute 'mode-line :foreground)
+		      :background (face-attribute 'default :background))
   (set-face-attribute 'meow-insert-indicator nil
-		      :foreground (face-attribute 'default :background)
-		      :background (face-attribute 'font-lock-constant-face :foreground))
+		      :foreground (face-attribute 'default :foreground)
+		      :background (face-attribute 'font-lock-constant-face :background))
 
   (setq meow-expand-hint-remove-delay 2.0)
   
@@ -943,22 +933,24 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
    '("j" . meow-motion-origin-command)
    '("k" . arche/kill-current-buffer)
    '("l" . recenter-top-bottom)
+   '("L" . calibredb)
    '("m" . bookmark-jump)
    '("n" . ivy-magit-todos)
-   '("o" . bufler-switch-buffer)
+   '("o" . switch-to-buffer)
    '("p" . project-find-file)
    '("P" . project-switch-project)
    '("q" . bury-buffer)
    '("r" . revert-buffer)
    '("s" . consult-ripgrep)
    '("S" . (lambda () (interactive) (consult-ripgrep t)))
-   '("t" . tab-bar-select-tab-by-name)
+   '("t" . hydra-tab-bar/body)
    '("Tn" . org-timer-set-timer)
    '("Tk" . org-timer-stop)
    '("u" . tab-bar-switch-to-recent-tab)
    '("v" . arche/toggle-vterm)
    '("w" . save-buffer)
    '("x" . meow-keypad-start)
+   '("y" . consult-register)
    '("zt" . arche/toggle-TeX-im)
    '("zc" . calendar)
    '("zg" . golden-ratio)
@@ -1020,7 +1012,7 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
    '("T" . meow-till-expand)
    '("a" . meow-insert)
    '("s" . meow-visit)
-   '("f" . avy-goto-word-0)
+   '("f" . avy-goto-char-timer)
    '("F" . meow-find-expand)
    '("d" . meow-kill)
    '("g" . meow-cancel)
@@ -1028,10 +1020,9 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
    '("Z" . meow-pop-all-selection)
    '("x" . meow-C-d)
    '("c" . meow-change)
-   '("C" . meow-change-save)
+   '("C" . flyspell-correct-wrapper)
    '("v" . kill-ring-save)
-   ;; TODO: b
-   '("b" . meow-left)
+   '("b" . execute-extended-command)
    '("B" . meow-left-expand)
    ;; right hand
    '("y" . meow-yank)
@@ -1039,11 +1030,24 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
    '("u" . meow-mark-symbol)
    '("i" . meow-inner-of-thing)
    '("I" . meow-bounds-of-thing)
+   '("0" . meow-expand-0)
+   '("9" . meow-expand-9)
+   '("8" . meow-expand-8)
+   '("7" . meow-expand-7)
+   '("6" . meow-expand-6)
+   '("5" . meow-expand-5)
+   '("4" . meow-expand-4)
+   '("3" . meow-expand-3)
+   '("2" . meow-expand-2)
+   '("1" . meow-expand-1)
+   '("-" . negative-argument)
+   '("[" . meow-beginning-of-thing)
+   '("]" . meow-end-of-thing)
+   '(";" . comment-line)
    '("o" . meow-open-below)
    '("O" . meow-open-above)
    '("p" . meow-block)
    '("P" . meow-block-expand)
-   '("b" . meow-left)
    '("B" . meow-left-expand)
    '("h" . meow-back-word)
    '("H" . meow-back-symbol)
@@ -1054,9 +1058,10 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
    '("n" . meow-right)
    '("N" . meow-right-expand)
    '("'" . point-to-register)
-   '("l" . avy-goto-char-in-line)
+   '("l" . meow-next-word)
    '("L" . meow-next-symbol)
-   '("m" . point-to-register)
+   '("m" . meow-keypad-start)
+   '("M" . point-to-register)
    '("," . meow-line-expand)
    '("." . repeat)
    '("/" . consult-line)
@@ -1065,47 +1070,47 @@ https://www.reddit.com/r/emacs/comments/fefwpw/show_your_themes/"
    '("&" . meow-query-replace)
    '("%" . meow-query-replace-regexp)
    '("'" . jump-to-register)
+   '("`" . pop-global-mark)
    '("\\" . quoted-insert))
+  (defun meow--bounds-of-round-parens ()
+    (meow--bounds-of-regexp "("))
 
-(defun meow--bounds-of-round-parens ()
-  (meow--bounds-of-regexp "("))
+  (defun arche/meow--bounds-of-org-elem ()
+    (let ((elem-prop (cadr (org-element-context))))
+      (if elem-prop (cons
+		     (plist-get elem-prop :begin)
+		     (plist-get elem-prop :end))
+	nil)))
 
-(defun arche/meow--bounds-of-org-elem ()
-  (let ((elem-prop (cadr (org-element-context))))
-    (if elem-prop (cons
-		   (plist-get elem-prop :begin)
-		   (plist-get elem-prop :end))
-      nil)))
+  (defun arche/next-line-of-point (point &optional n)
+    (save-excursion
+      (goto-char point)
+      (next-line (if n n 1))
+      (point)))
 
-(defun arche/next-line-of-point (point &optional n)
-  (save-excursion
-    (goto-char point)
-    (next-line (if n n 1))
-    (point)))
+  (defun arche/previous-line-of-point (point &optional n)
+    (save-excursion
+      (goto-char point)
+      (previous-line (if n n 1))
+      (point)))
 
-(defun arche/previous-line-of-point (point &optional n)
-  (save-excursion
-    (goto-char point)
-    (previous-line (if n n 1))
-    (point)))
+  (defun arche/meow--inner-of-org-elem ()
+    (let* ((elem-type (car (org-element-context)))
+	   (elem-prop (cadr (org-element-context)))
+	   (begin (plist-get elem-prop :begin))
+	   (end (plist-get elem-prop :end)))
+      (cond
+       ((eq elem-type 'src-block) (cons (arche/next-line-of-point begin)
+					(arche/previous-line-of-point end 2)))
+       ((eq elem-type 'latex-fragment)
+	(cons (+ begin 2)
+	      (- end 2))))))
 
-(defun arche/meow--inner-of-org-elem ()
-  (let* ((elem-type (car (org-element-context)))
-	(elem-prop (cadr (org-element-context)))
-	(begin (plist-get elem-prop :begin))
-	(end (plist-get elem-prop :end)))
-    (cond
-     ((eq elem-type 'src-block) (cons (arche/next-line-of-point begin)
-				      (arche/previous-line-of-point end 2)))
-     ((eq elem-type 'latex-fragment)
-      (cons (+ begin 2)
-	    (- end 2))))))
+  (meow--thing-register 'org-elem
+			#'arche/meow--inner-of-org-elem
+			#'arche/meow--bounds-of-org-elem)
 
-(meow--thing-register 'org-elem
-		      #'arche/meow--inner-of-org-elem
-		      #'arche/meow--bounds-of-org-elem)
-
-(add-to-list 'meow-char-thing-table (cons ?o 'org-elem)))
+  (add-to-list 'meow-char-thing-table (cons ?o 'org-elem)))
 #+end_src
 
 *** olivetti
@@ -1177,6 +1182,61 @@ Add guix system program path:
   :after (pdf-tools org)
   :hook (org-mode . org-pdftools-setup-link))
 (use-package htmlize)
+(use-package org-bars
+  :straight (:host github :repo "tonyaldon/org-bars" :branch "master")
+  :config
+  
+  ;; (add-hook 'org-mode-hook 'org-no-ellipsis-in-headlines)
+  ;; (remove-hook 'org-mode-hook 'org-bars-mode)
+  )
+
+(use-package laas
+  :after (avy s)
+  :config
+  (defun avy-fudu-visible-latex-fragment (&optional strip)
+    (interactive)
+    (let* ((lfs (org-element-map (org-element-parse-buffer) 'latex-fragment
+		  (lambda (lf) (cons (org-element-property :begin lf)
+				     (org-element-property :value lf)))))
+	   (lfs-visible (->> lfs
+			     (-filter (lambda (b-v) (and (< (car b-v) (window-end))
+							 (> (car b-v) (window-start)))))))
+	   (p (save-excursion (avy-process lfs-visible) (point)))
+	   (fragment (cdr (assoc p lfs-visible))))
+      (if strip
+	  (->> fragment (string-remove-prefix "\\(") (string-remove-suffix "\\)"))
+	fragment)
+      ))
+
+  (aas-set-snippets 'laas-mode
+		    "jj" (lambda () (interactive)
+			   (if (not (texmathp))
+			       (progn
+				 (insert (avy-fudu-visible-latex-fragment (texmathp)))
+				 (backward-char 2))
+			     (insert (avy-fudu-visible-latex-fragment t))))))
+
+(use-package org-visual-indent
+  :disabled
+  :after org
+  :straight (:host github :repo "legalnonsense/org-visual-outline" :branch "master"))
+
+(use-package org-dynamic-bullets
+  :after (org org-visual-indent)
+  :straight (:host github :repo "legalnonsense/org-visual-outline" :branch "master")
+  :config
+  ;; (add-hook 'org-mode-hook 'org-visual-indent-mode)
+  ;; (add-hook 'org-mode-hook 'org-dynamic-bullets-mode)
+  (defun org-no-ellipsis-in-headlines ()
+    "Remove use of ellipsis in headlines. See
+`buffer-invisibility-spec'."
+    (remove-from-invisibility-spec '(outline . t))
+    (add-to-invisibility-spec 'outline))
+  (add-hook 'org-mode-hook 'org-no-ellipsis-in-headlines)
+  (setq org-visual-indent-color-indent '((1 (:background "blue" :foreground "blue" :height .1))
+                                       (2 (:background "red" :foreground "red" :height .1))
+                                       (3 (:background "green" :foreground "green" :height .1))))
+  )
 #+end_src
 
 *** basic setup
@@ -1198,10 +1258,9 @@ Add guix system program path:
   (setq org-ellipsis " ▾")
   (setq org-capture-bookmark nil)
   (setq org-image-actual-width nil)
-  (setq org-pretty-entities t
-	org-pretty-entities-include-sub-superscripts nil)
-  (setq org-startup-with-latex-preview t)
-  (plist-put org-format-latex-options :scale 2.8))
+  (setq org-startup-with-latex-preview nil)
+  (plist-put org-format-latex-options :scale 3.5)
+  (plist-put org-format-latex-options :background "Transparent"))
 #+end_src
 
 *** window rules
@@ -1222,7 +1281,8 @@ Add guix system program path:
 #+begin_src emacs-lisp
 ;;;###autoload
 (defun arche/org-setup-agenda ()
-  (setq org-agenda-files (list "~/org/todo.org"))
+  (setq org-agenda-files (list "~/org/todo.org"
+			       "~/org/pomodoro.org"))
   (global-set-key (kbd "C-'") #'org-cycle-agenda-files))
 #+end_src
 
@@ -1289,6 +1349,70 @@ Add guix system program path:
 (use-package ob-async)
 #+end_src
 
+**** src block tools
+
+***** integration with avy
+
+#+begin_src emacs-lisp
+(require 'avy)
+(require 'hydra)
+
+(defun arche/avy-jump-to-visible-block ()
+  (interactive)
+  (avy-jump "#\\+BEGIN_SRC" :window-flip nil :beg (window-start) :end (window-end)))
+
+(defun arche/avy-execute-visible-block ()
+  (interactive)
+  (org-mark-ring-push)
+  (avy-jump "#\\+BEGIN_SRC" :window-flip nil :beg (window-start) :end (window-end))
+  (org-babel-execute-src-block))
+
+(defun scimax-ob-execute-and-next-block (&optional new)
+  "Execute this block and either jump to the next block with the
+same language, or add a new one.
+With prefix arg NEW, always insert new cell."
+  (interactive "P")
+  (org-babel-execute-src-block)
+  ;; we ignore-errors here because when there is no next block it is a
+  ;; user-error, not nil.
+  (let* ((lang (car (org-babel-get-src-block-info t)))
+	 (next-block (ignore-errors
+		       (save-excursion
+			 (catch 'block
+			   (while (setq next-block (org-babel-next-src-block))
+			     (when (string= lang (org-element-property :language (org-element-context)))
+			       (throw 'block next-block))))))))
+    (if (or new (not next-block))
+	(scimax-ob-insert-src-block t)
+      (goto-char (match-beginning 0)))))
+
+(defun org-babel-execute-to-point ()
+  "Execute all the blocks up to and including the one point is on."
+  (interactive)
+  (let ((p (point)))
+    (save-excursion
+      (goto-char (point-min))
+      (while (and (org-babel-next-src-block) (< (point) p))
+	(org-babel-execute-src-block)))))
+
+(defhydra hydra-org-block-menu (org-mode-map "C-x C-b"
+					     :color pink
+					     :hint nil)
+  "
+^Navigate^    ^Execution^
+_a_: jump     _RET_: execute
+_j_: next     _n_: execute current block and go to next block
+_k_: previous _t_: execute all blocks till the current one
+"
+  ("a" arche/avy-jump-to-visible-block)
+  ("j" org-next-block)
+  ("k" org-previous-block)
+  ("<return>" org-babel-execute-src-block :color blue)
+  ("n" scimax-ob-execute-and-next-block :color blue)
+  ("t" org-babel-execute-to-point :color blue)
+  )
+#+end_src
+
 *** noter
 
 #+begin_src emacs-lisp
@@ -1298,7 +1422,21 @@ Add guix system program path:
 	(list "~/library/notes/")))
 #+end_src
 
-*** oc
+*** latex editing within org-mode
+
+#+begin_src emacs-lisp
+(defun arche/org-setup-latex-editing ()
+  (setq org-pretty-entities t)
+  (setq org-pretty-entities-include-sub-superscripts nil)
+  (setq TeX-electric-sub-and-superscript t)
+  (setq org-use-sub-superscripts '{})
+  (setq org-highlight-latex-and-related '(latex script entities))
+  ;; (set-face-attribute 'font-latex-math-face nil :background (face-attribute 'default :background))
+  )
+
+#+end_src
+
+*** oc and latex export
 
 #+begin_src emacs-lisp
 ;;;###autoload
@@ -1324,16 +1462,34 @@ In order to support citation in (latex->pdf) process:
 	"pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
 #+end_src
 
+LaTeX export for code blocks:
+
+#+begin_src emacs-lisp
+(setq org-latex-listings 'minted)
+#+end_src
+
+*** abbrev
+
+#+begin_src emacs-lisp
+(define-abbrev-table 'org-mode-abbrev-table
+  '(("jj" "\\because")
+    ("kk" "\\therefore")))
+#+end_src
+
+
+#+end_src
+
 *** hook
 
 #+begin_src emacs-lisp
 ;;;###autoload
 (defun arche/org-mode-hook ()
-  (org-bullets-mode t)
-  (org-indent-mode t)
+  ;; (org-indent-mode t)
+  (laas-mode)
   (org-cdlatex-mode)
   (org-fragtog-mode)
   (visual-line-mode t)
+  (abbrev-mode t)
   ;; (if (one-window-p) (olivetti-mode t))
   )
 #+end_src
@@ -1347,25 +1503,27 @@ In order to support citation in (latex->pdf) process:
 #+end_src
 
 #+begin_src emacs-lisp
-(use-package org-roam
-  :straight nil
-  :after org
-  :init
-  (setq org-roam-v2-ack t)
-  :custom
-  (org-roam-directory "~/org-roam")
-  (org-roam-db-location "~/tmp/org-roam-v2-experimental.db")
-  :config
-  (org-roam-setup)
-  )
+  (use-package org-roam
+    :straight nil
+    :after org
+    :init
+    (setq org-roam-v2-ack t)
+    :custom
+    (org-roam-directory (file-truename "~/org-roam/"))
+    (org-roam-db-location (file-truename "~/tmp/org-roam.db"))
+    :config
+    (org-roam-setup))
 
-(use-package org-roam-ui
-  :straight (:host github
-		   :repo "org-roam/org-roam-ui"
-		   :branch "main"
-		   :files ("*.el" "out"))
-  :after org-roam
-  :config (setq org-roam-ui-sync-theme nil))
+  (use-package org-roam-ui
+    :straight (:host github
+		     :repo "org-roam/org-roam-ui"
+		     :branch "main"
+		     :files ("*.el" "out"))
+    :after (org-roam)
+    :config
+    (setq org-roam-ui-sync-theme t
+	  org-roam-ui-follow t
+	  org-roam-ui-update-on-save t))
 #+end_src
 
 *** finishing setup
@@ -1374,6 +1532,7 @@ In order to support citation in (latex->pdf) process:
 ;;;###autoload
 (defun arche/org-setup ()
   (arche/org-setup-basic)
+  (arche/org-setup-latex-editing)
   (arche/org-setup-display)
   (arche/org-setup-window)
   (arche/org-setup-agenda)
@@ -1386,96 +1545,58 @@ In order to support citation in (latex->pdf) process:
 (use-package org
   :after (olivetti)
   :config
+  (org-reload)
   (arche/org-setup))
 #+end_src
 
-*** inline math
+*** org-mode center equation
 
 #+begin_src emacs-lisp
-(defvar inline-math-candidates '()
-  "A list of strings. Stored for completion of inline math LaTeX
-  fragments.")
+;; specify the justification you want
+(plist-put org-format-latex-options :justify 'center)
 
-;;;###autoload
-(defun my-org-get-inline-math () 
-  "Get inline math around cursor"
-  (interactive)
-  (let* ((context (org-element-context))
-	 (type (org-element-type context)))
-    (when (memq type '(latex-environment latex-fragment))
-      (my-remove-inline-matrix-delimiter (org-element-property :value context))
-      )))
+(defun org-justify-fragment-overlay (beg end image &optional imagetype)
+  "Adjust the justification of a LaTeX fragment.
+The justification is set by :justify in
+`org-format-latex-options'. Only equations at the beginning of a
+line are justified."
+  (cond
+   ;; Centered justification
+   ((and (eq 'center (plist-get org-format-latex-options :justify)) 
+         (= beg (line-beginning-position)))
+    (let* ((img (create-image image 'imagemagick t))
+           (width (car (image-size img)))
+           (offset (floor (- (/ (window-text-width) 2) (/ width 2)))))
+      (overlay-put (ov-at) 'before-string (make-string offset ? ))))
+   ;; Right justification
+   ((and (eq 'right (plist-get org-format-latex-options :justify)) 
+         (= beg (line-beginning-position)))
+    (let* ((img (create-image image 'imagemagick t))
+           (width (car (image-display-size (overlay-get (ov-at) 'display))))
+           (offset (floor (- (window-text-width) width (- (line-end-position) end)))))
+      (overlay-put (ov-at) 'before-string (make-string offset ? ))))))
 
-;;;###autoload
-(defun my-org-get-inline-math-prefix ()
-  "Prefix definition for company backend. Returns nil if the
-cursor is no inside a latex fragment. Otherwise, the substring
-between left delimiter and the current cursor is returned."
-  ;; the prefix must be immediately before the pointer
-  ;; first confirm the point is inside a latex-fragment
-  ;; then search-forward for '\\(' and obtain the prefix
-  (interactive
-   let* ((context (org-element-context))
-	 (type (org-element-type context)))
-   (when (eq type 'latex-fragment)
-     (let* ((inline-math (org-element-property :value context))
-	    (inline-math-prefix-point-min (+ (save-excursion (re-search-backward (rx "\\("))) 2)))
-       (buffer-substring-no-properties inline-math-prefix-point-min (point))))))
+(defun org-latex-fragment-tooltip (beg end image &optional imagetype)
+  "Add the fragment tooltip to the overlay and set click function to toggle it."
+  (overlay-put (ov-at) 'help-echo
+               (concat (buffer-substring beg end)
+                       "mouse-1 to toggle."))
+  (overlay-put (ov-at) 'local-map (let ((map (make-sparse-keymap)))
+                                    (define-key map [mouse-1]
+                                      `(lambda ()
+                                         (interactive)
+                                         (org-remove-latex-fragment-image-overlays ,beg ,end)))
+                                    map)))
 
-;;;###autoload
-(defun my-org-get-all-inline-math ()
-  "Store all inline math LaTeX fragments in the `inline-math-candidates'"
-  (interactive)
-  (progn
-    (save-excursion (progn (setq inline-math-candidates nil)
-			   (goto-char (point-min))
-			   (while (re-search-forward
-				   (rx (not "=") "\\(")
-				   (point-max) t)
-			     (add-to-list 'inline-math-candidates (my-org-get-inline-math))
-			     ))))
-  inline-math-candidates)
-
-;;;###autoload
-(defun my-remove-inline-matrix-delimiter (str)
-  "Given the value of a LaTeX fragment org element, remove its
-delimiters to make it an appropriate candidate for completion."
-  (string-remove-prefix "\\("
-			(string-remove-suffix "\\)"
-					      str)))
-
-;;;###autoload
-(defun company-inline-math-backend (command &optional arg &rest ignored)
-  "The company backend for completing inline math LaTeX
-fragments.  The candidates are obtained by trasversing all LaTeX
-fragments in the org buffer"
-  (interactive (list 'interactive))
-  (cl-case command
-    (interactive (company-begin-backend 'company-inline-math-backend))
-    (prefix (and (eq major-mode 'org-mode)
-		 (my-org-get-inline-math-prefix)))
-    (candidates
-     (cl-remove-if-not
-      (lambda (str) (string-prefix-p arg str))
-      (progn (my-org-get-all-inline-math)
-	     inline-math-candidates)))))
-
-(add-to-list 'company-backends #'company-inline-math-backend)
-
-;;;###autoload
-(defun my-select-inline-math ()
-  "Complete inline math and insert."
-  (interactive)
-  (insert (try-completion "Select inline math: "
-			  (progn (my-org-get-all-inline-math)
-				 inline-math-candidates)
-			  nil t)))
-
-
+;; advise the function to a
+(advice-add 'org--make-preview-overlay :after 'org-justify-fragment-overlay)
+(advice-add 'org--make-preview-overlay :after 'org-latex-fragment-tooltip)
+;; That is it. If you get tired of the advice, remove it like this:
+;; (advice-remove 'org--format-latex-make-overlay 'org-justify-fragment-overlay)
+;; (advice-remove 'org--format-latex-make-overlay 'org-latex-fragment-tooltip)
 #+end_src
 
 #+RESULTS:
-: my-select-inline-math
 
 
 ** pass
@@ -1524,7 +1645,9 @@ fragments in the org buffer"
    "m" #'pdf-outline-follow-link)
   
   (defun arche/pdf-hook ()
-    (blink-cursor-mode -1))
+    (auto-revert-mode 1)
+    (blink-cursor-mode -1)
+    (display-line-numbers-mode -1))
 
   (add-hook 'pdf-tools-enabled-hook #'arche/pdf-hook))
 
@@ -1588,11 +1711,46 @@ fragments in the org buffer"
 	(if arg
 	    (let ((command (concat "mupdf-x11" " " pdf-file)))
 	      (start-process-shell-command command nil command))
-	  (message "hello")
 	  (find-file pdf-file))
 	(message "book not found :)")))) 
 
 #+end_src
+
+** calibre
+
+https://github.com/chenyanming/calibredb.el
+
+#+begin_src scheme :noweb-ref guix-packages :noweb-sep ""
+
+"calibre"
+"emacs-calibredb"
+
+#+end_src
+
+#+begin_src emacs-lisp
+(use-package calibredb
+  :straight nil
+  :config
+  (setq calibredb-db-dir "~/calibre/metadata.db")
+  (setq calibredb-root-dir "~/calibre")
+  (setq calibredb-format-all-the-icons t))
+#+end_src
+
+*** TODO integration with org-cite
+
+*** epub
+
+#+begin_src emacs-lisp
+(use-package nov
+  :config
+  ;; tip: never use toc (t), use imenu instead!
+  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
+  :hook
+  (nov-mode . variable-pitch-mode))
+#+end_src
+
+#+RESULTS:
+| variable-pitch-mode |
 
 ** http-proxy
 
@@ -1777,6 +1935,11 @@ Reuse existing compilation-mode window.
 (add-to-list 'org-babel-load-languages (cons 'haskell t))
 #+end_src
 
+#+begin_src emacs-lisp
+(add-to-list 'org-babel-load-languages (cons 'haskell t))
+#+end_src
+
+
 *** lisp
 
 **** scheme
@@ -1785,16 +1948,24 @@ Reuse existing compilation-mode window.
 (add-to-list 'org-babel-load-languages (cons 'scheme t))
 #+end_src
 
-***** guile
+***** TODO guile
 
 #+begin_src emacs-lisp
 (use-package geiser-guile)
+(add-hook 'scheme-mode-hook #'lispy-mode)
 #+end_src
+
+flycheck support
+https://github.com/flatwhatson/flycheck-guile
 
 **** common lisp
 
 #+begin_src emacs-lisp
 (use-package sly)
+(add-hook 'lisp-mode-hook 'lispy-mode)
+;(use-package slime)
+(setq org-babel-lisp-eval-fn #'sly-eval)
+(add-to-list 'org-babel-load-languages (cons 'lisp t))
 #+end_src
 
 *** yaml
@@ -1840,14 +2011,17 @@ Useful features:
 (global-set-key (kbd "C-c p") #'arche/toggle-python)
 #+end_src
 
-** startup speed optimization(tail)
+*** gap
+
+Gap is a computer algebra system.
 
 #+begin_src emacs-lisp
-(setq gc-cons-threshold 16777216
-      gc-cons-percentage 0.1
-      ;; file-name-handler-alist arche/file-name-handler-alist
-      )
+(use-package gap-mode
+  :config
+  (setq gap-executable "~/.guix-profile/bin/gap")
+  (setq gap-start-options '("-f" "-b" "-m" "2m" "-E")))
 #+end_src
+
 
 ** backup config
 
@@ -1858,6 +2032,65 @@ Useful features:
 
 #+RESULTS:
 : (( . ~/.config/emacs-experiment/backup/))
+
+** flyspell-correct
+
+#+begin_src emacs-lisp
+(use-package flyspell-correct)
+(use-package flyspell-correct-avy-menu
+  :after flyspell-correct
+  :config
+  (add-hook 'org-mode-hook #'flyspell-mode)) 
+#+end_src
+
+#+RESULTS:
+: t
+
+** ffip
+
+#+begin_src emacs-lisp
+(use-package find-file-in-project
+  :config (setq ffip-use-rust-fd t))
+#+end_src
+
+#+RESULTS:
+: t
+** smartparens
+
+#+begin_src emacs-lisp
+(use-package smartparens
+  :config
+  (require 'smartparens-config)
+  (smartparens-global-mode t))
+#+end_src
+
+#+RESULTS:
+: t
+
+TODO: learn from [[https://github.com/expez/evil-smartparens][evil-smartparens]] and integrate with meow.
+
+** helpful
+
+#+begin_src emacs-lisp
+(use-package helpful
+  :config
+  (global-set-key (kbd "C-h C-f") #'helpful-callable)
+  (global-set-key (kbd "C-h C-v") #'helpful-variable)
+  (global-set-key (kbd "C-h C-s") #'helpful-symbol))
+#+end_src
+
+#+RESULTS:
+: t
+
+
+** startup speed optimization(tail)
+
+#+begin_src emacs-lisp
+(setq gc-cons-threshold 16777216
+      gc-cons-percentage 0.1
+      ;; file-name-handler-alist arche/file-name-handler-alist
+      )
+#+end_src
 
 * experimental
 
@@ -2110,20 +2343,6 @@ Version 2017-05-24"
 #+RESULTS:
 : ((asymptote . t) (python . t) (scheme . t) (haskell . t) (C . t) (shell . t) (latex . t) (maxima . t) (emacs-lisp . t))
 
-** epub
-
-#+begin_src emacs-lisp
-(use-package nov
-  :config
-  ;; tip: never use toc (t), use imenu instead!
-  (add-to-list 'auto-mode-alist '("\\.epub\\'" . nov-mode))
-  :hook
-  (nov-mode . variable-pitch-mode))
-#+end_src
-
-#+RESULTS:
-| variable-pitch-mode |
-
 ** simple-httpd
 
 #+begin_src emacs-lisp
@@ -2149,12 +2368,6 @@ Version 2017-05-24"
 
 #+RESULTS:
 : is-latex
-
-** org-mode latex fragment appearance
-
-#+begin_src emacs-lisp
-(setq )
-#+end_src
 
 ** dogears
 
@@ -2193,6 +2406,19 @@ Version 2017-05-24"
   (setq edraw-org-link-export-data-tag 'img))
 #+end_src
 
+#+RESULTS:
+: t
+
+
+** inkscape integration
+
+#+begin_src emacs-lisp
+(straight-use-package '(ink :type git :host github :repo "foxfriday/ink"))
+#+end_src
+
+#+RESULTS:
+: t
+
 ** lorem-ipsum
 
 #+begin_src emacs-lisp
@@ -2213,7 +2439,92 @@ Version 2017-05-24"
 #+RESULTS:
 : t
 
-** org-download
+** org latex code block export
 
 #+begin_src emacs-lisp
+(setq org-latex-listings 'minted)
 #+end_src
+
+#+RESULTS:
+: minted
+
+** boxy
+
+#+begin_src emacs-lisp
+(use-package boxy
+  :straight (:host gitlab :repo "tygrdev/boxy" :branch "main"))
+
+(use-package boxy-headings
+  :straight (:host gitlab :repo "tygrdev/boxy-headings" :branch "main"))
+
+(use-package boxy-imenu
+  :straight (:host gitlab :repo "tygrdev/boxy-imenu" :branch "main"))
+
+(use-package org-real
+  :straight (:host gitlab :repo "tygrdev/org-real" :branch "main"))
+#+end_src
+
+#+RESULTS:
+
+** orglink
+
+#+begin_src emacs-lisp
+(use-package orglink
+  :config (global-orglink-mode))
+#+end_src
+
+#+RESULTS:
+
+** xenops
+
+#+begin_src emacs-lisp
+(use-package xenops
+  :straight (:host github :repo "dandavison/xenops" :branch "master"))
+
+(add-to-list 'texmathp-environments "tikzcd")
+#+end_src
+
+#+RESULTS:
+| tikzcd | equation | eqnarray | eqnarray* | math | displaymath | minipage | equation* | align | align* | gather | gather* | multline | multline* | flalign | flalign* | alignat | alignat* | xalignat | xalignat* | xxalignat | empheq | AmSequation | AmSequation* | AmSalign | AmSalign* | AmSgather | AmSgather* | AmSmultline | AmSmultline* | AmSflalign | AmSflalign* | AmSalignat | AmSalignat* | dmath | dmath* | dseries | dseries* | dgroup | dgroup* | darray | darray* | dsuspend |
+
+** org-sidebar
+
+#+begin_src emacs-lisp
+(use-packge org-sidebar)
+#+end_src
+
+#+RESULTS:
+
+** screenshot
+
+#+begin_src emacs-lisp
+(use-package screenshot)
+#+end_src
+
+** ox-chameleon
+
+#+begin_src emacs-lisp
+(use-package engrave-faces
+  :straight (:host github :repo "tecosaur/engrave-faces" :branch "master"))
+(use-package ox-chameleon
+  :after engrave-faces
+  :straight (:host github :repo "tecosaur/ox-chameleon" :branch "master"))
+#+end_src
+
+#+RESULTS:
+
+** calctex
+
+#+begin_src emacs-lisp
+(use-package calctex
+  :straight (:host github :repo "johnbcoughlin/calctex"
+                   :files ("*.el" "calctex/*.el" "calctex-contrib/*.el" "org-calctex/*.el" "vendor")))
+#+end_src
+
+#+RESULTS:
+
+
+
+#+RESULTS:
+| native | script | entities |
+

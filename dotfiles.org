@@ -129,6 +129,9 @@ window:
   dimensions:
     columns: 100
     lines: 20
+  padding:
+    x: 10
+    y: 10
 
 #+end_src
 
@@ -139,7 +142,7 @@ window:
 But the background is just black.
 
 #+begin_src yaml
-background_opacity: 0.9
+background_opacity: 0.8
 
 colors:
   primary:
@@ -784,47 +787,123 @@ config.unbind("wo", mode="normal")
 config.bind("wo", "window-only", mode="normal")
 #+end_src
 
-* stumpwm                                                           :ARCHIVE:
-:PROPERTIES:
-:header-args: :tangle ~/.stumpwm.d/init.lisp
-:END:
-
-** start swank server
-
+* stumpwm
 #+begin_src lisp
-(load "~/.emacs.d/straight/repos/slime/swank-loader.lisp")
-(swank-loader:init)
-(defcommand swank () ()
-    (swank:create-server :port 4005
-                       :style swank:*communication-style*
-                       :dont-close t)
-  (echo-string (current-screen)
-	       "Starting swank. M-x slime-connect RET RET, then (in-package stumpwm)."))
-(swank)
-#+end_src
+(load "~/.config/emacs-experiment/straight/repos/sly/slynk/slynk-loader.lisp")
+(slynk-loader:init)
+(slynk:create-server :dont-close t :port 4005)
 
-** raise-or-run
+;; (load "~/.sbclrc")
+;; (ql:quickload "clx-truetype")
 
-#+begin_src lisp
+(setf *mouse-focus-policy* :click)
+
+(stumpwm:add-to-load-path "~/.guix-profile/share/common-lisp/sbcl/stumpwm-ttf-fonts/")
+(stumpwm:add-to-load-path "~/.guix-profile/share/common-lisp/sbcl/stumpwm-stumptray/")
+(stumpwm:add-to-load-path "~/.guix-profile/share/common-lisp/sbcl/clx-truetype/")
+(stumpwm:add-to-load-path "~/.guix-profile/share/common-lisp/sbcl/stumpwm-winner-mode/")
+(stumpwm:add-to-load-path "~/.guix-profile/share/common-lisp/sbcl/stumpwm-swm-gaps/")
+
+(load-module "ttf-fonts")
+(load-module "stumptray")
+(load-module "clx-truetype")
+(load-module "winner-mode")
+(load-module "swm-gaps")
+
+(setf swm-gaps:*outer-gaps-size* 100)
+(setf swm-gaps:*inner-gaps-size* 50)
+
+(setf winner-mode:*tmp-folder*
+      (merge-pathnames #p"tmp/" (user-homedir-pathname)))
+;; (add-hook *post-command-hook* (lambda (command)
+                                ;; (when (member command winner-mode:*default-commands*)
+                                  ;; (winner-mode:dump-group-to-file))))
+;; (setf *post-command-hook* nil)
+
+(defparameter xft:+font-cache-filename+ 
+  #.(merge-pathnames "font-cache.sexp"
+                     (merge-pathnames ".fonts/" (user-homedir-pathname))))
+(defparameter xft:*font-dirs*
+  (list #.(merge-pathnames ".guix-profile/share/fonts/truetype/" (user-homedir-pathname))))
+
+(xft:cache-fonts)
+(set-font (make-instance 'xft:font :family "Fantasque Sans Mono" :subfamily "Regular" :size 24))
+
+(defcommand reset-font () ()
+  (set-font (make-instance 'xft:font :family "Fantasque Sans Mono" :subfamily "Regular" :size 24))) 
 
 (defcommand emacs () ()
-  "Start emacs unless it is already running, in which case focus it.
-Do not jump across groups."
   (run-or-raise "emacs" '(:class "Emacs") nil))
 (defcommand qutebrowser () ()
-  "Start qutebrowser unless it is already running, in which case focus it.
-Do not jump across groups."
   (run-or-raise "qutebrowser" '(:class "qutebrowser") nil))
 (defcommand alacritty () ()
-  "Start alacritty unless it is already running, in which case focus it.
-Do not jump across groups."
   (run-or-raise "alacritty" '(:class "Alacritty") nil))
+(defcommand nyxt () ()
+  (run-or-raise "GDK_SCALE=2 GDK_DPI_SCALE=0.5 nyxt" '(:class "Nyxt") nil))
 
+;; TODO: rewrite fselect to use alphabets to index windows
+
+(define-key *root-map* (kbd ",") "gprev")
+(define-key *root-map* (kbd ".") "gnext")
 (define-key *top-map* (kbd "s-q") "qutebrowser")
 (define-key *top-map* (kbd "s-e") "emacs")
 (define-key *top-map* (kbd "s-a") "alacritty")
-#+end_src
+(define-key *top-map* (kbd "s-n") "nyxt")
+(define-key *top-map* (kbd "s-j") "fnext")
+(define-key *top-map* (kbd "s-SPC") "next-in-frame")
+(define-key *top-map* (kbd "s-k") "fprev")
+(define-key *top-map* (kbd "s-[") "prev")
+(define-key *top-map* (kbd "s-]") "next")
+;; fselect: select window like ace-window
+(define-key *top-map* (kbd "s-o") "pull-from-windowlist")
+(define-key *top-map* (kbd "s-f") "fullscreen")
+(define-key *top-map* (kbd "s-'") "grouplist")
+(define-key *top-map* (kbd "s-/") "toggle-gaps")
+(define-key *top-map* (kbd "s-RET") "expose")
+(define-key *top-map* (kbd "s-m") "mode-line")
+;; TODO mode-line
+;; learn from https://github.com/alezost/stumpwm-config
 
+;; (load #.(merge-pathnames ".stumpwm.d/mode-line-battery.lisp" (user-homedir-pathname)))
+
+;; join string: https://stackoverflow.com/questions/8830888/whats-the-canonical-way-to-join-strings-in-a-list
+(defun battery-string ()
+  (let ((command "upower -i $(upower -e | grep BAT) | grep --color=never -E \"state|to\ full|to\ empty|percentage\""))
+    (format nil "~{~A~^ ~}" 
+	  (remove-if (lambda (s) (= 0 (length s)))
+		     (cl-ppcre:split "\\s"
+				     (stumpwm:run-shell-command command t))))))
+;; (defparameter *tab-file* (merge-pathnames "tmp/emacs-tabs" (user-homedir-pathname)))
+;; (defun emacs-tab-string ()
+;; (if (probe-file *tab-file*) (with-open-file (in *tab-file*) (read-line in nil nil)) ""))
+
+;; for colors: info "(stumpwm) Colors"
+(setf stumpwm:*screen-mode-line-format*
+      (list
+       "["
+       " ^[^2*%d^]"
+       " | "
+       "^7"
+       '(:eval (battery-string))
+       "^]"
+       "]----------"
+       ;; '(:eval (emacs-tab-string))
+       "[ ^6%n^]%w]"
+       "----------"
+       "[%g]"))
+
+(setf *mode-line-background-color* "#000000")
+(setf *mode-line-border-color* "#000000")
+(setf *mode-line-pad-x* 30)
+(setf *mode-line-pad-y* 0)
+(setf *mode-line-position* :top)
+(setf *mode-line-timeout* 1)
+(mode-line)
+(stumptray:stumptray)
+
+(setf *normal-border-width* 0)
+(setf *window-border-style* :THIN)
+#+end_src
 * password management and encryption
 
 ** gpg agent
@@ -1012,6 +1091,7 @@ export XMODIFIERS="@im=ibus"
 export GUIX_GTK2_IM_MODULE_FILE=/run/current-system/profile/lib/gtk-2.0/2.10.0/immodules-gtk2.cache
 export GUIX_GTK3_IM_MODULE_FILE=/run/current-system/profile/lib/gtk-3.0/3.0.0/immodules-gtk3.cache
 export GDK_SCALE=2
+export GDK_DPI_SCALE=0.5
 export GTK_THEME=Materia-dark-compact
 
 # Start Shepherd to manage user daemons
@@ -1242,6 +1322,7 @@ Config { font = "xft:victormono-10"
 unbind C-b
 set -g prefix m-j
 bind m-j send-prefix
+bind-key t set-option status	# toggle status bar
 #+end_src
 
 ** apperance
@@ -1252,6 +1333,7 @@ set -g status-position top
 set -g status-position top
 set -g status-left ''
 set -g status-right ''
+
 # set status-style 'bg=colour236 fg=colour255'
 # setw -g window-status-style 'fg=colour255 bg=colour237'
 #+end_src

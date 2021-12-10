@@ -101,22 +101,22 @@ add mod1 = Alt_L Alt_R
 #+begin_src yaml
 font:
   # The size to use.
-  size: 13
+  size: 11
   # The normal (roman) font face to use.
   normal:
-    family: Victor Mono
+    family: Fantasque Sans Mono
     # Style can be specified to pick a specific face.
     style: regular
 
   # The bold font face
   bold:
-    family: Victor Mono
+    family: Fantasque Sans Mono
     # Style can be specified to pick a specific face.
     style: bold
 
   # The italic font face
   italic:
-    family: Victor Mono
+    family: Fantasque Sans Mono
     # Style can be specified to pick a specific face.
     style: italic
 #+end_src
@@ -199,7 +199,7 @@ colors:
 #+begin_src yaml
 background_opacity: 0.8
 
-colors: 
+colors:
   primary:
     # dark
     background: '#000000'
@@ -212,7 +212,7 @@ colors:
     blue: '#2fafff'
     magenta: '#feacd0'
     cyan: '#00d3d0'
-    white: '#eeeedd'    
+    white: '#eeeedd'
 
 #+end_src
 * mail
@@ -232,9 +232,9 @@ import subprocess
 
 def get_pass(account):
     return subprocess.Popen("pass" + " " + account + "/email",
-                           shell=True,
-                           stdout=subprocess.PIPE,
-                           universal_newlines=True).communicate()[0].split("\n")[0]
+			   shell=True,
+			   stdout=subprocess.PIPE,
+			   universal_newlines=True).communicate()[0].split("\n")[0]
 
 #+end_src
 
@@ -302,7 +302,7 @@ sslcacertfile = /etc/ssl/certs/ca-certificates.crt
 # sslcacertfile = OS-DEFAULT
 #+end_src
 
-* compton
+* picom
 :PROPERTIES:
 :header-args: :tangle ~/.config/compton/compton.conf
 :END:
@@ -316,16 +316,21 @@ inactive-dim = 0.1;
 ** window transparency
 
 #+begin_src conf
-opacity-rule = [ "80:name = 'sketch'" ];
+opacity-rule = [ "80:name = 'sketch'",
+		 "80:name = 'Nightly'",
+		 "80:name = 'Zathura'",
+		 "90:name *= 'qutebrowser'" ];
 #+end_src
 
 ** TODO blur
 
-#+begin_src conf :tangle nil
-blur-method = "dual_kawase";
-blur-strength = 6;
-blur-background = true;
-blur-kern = "7x7box";
+#+begin_src conf
+# use picom from https://github.com/tryone144/picom/tree/feature/dual_kawase:
+# picom --experimental-backends --config ~/.config/compton/compton.conf --backend glx
+blur: {
+	method = "dual_kawase";
+	strength = 10;
+};
 #+end_src
 
 * qutebrowser
@@ -351,7 +356,7 @@ c.scrolling.smooth = False
 
 ** user agency, js and image rendering
 
-#+begin_src python 
+#+begin_src python
 config.set('content.headers.user_agent', 'Mozilla/5.0 ({os_info}) AppleWebKit/{webkit_version} (KHTML, like Gecko) {upstream_browser_key}/{upstream_browser_version} Safari/{webkit_version}', 'https://web.whatsapp.com/')
 
 config.set('content.headers.user_agent', 'Mozilla/5.0 ({os_info}; rv:71.0) Gecko/20100101 Firefox/71.0', 'https://accounts.google.com/*')
@@ -755,14 +760,17 @@ c.colors.tabs.selected.odd.fg = nord['nord5']
 ** fonts
 
 #+begin_src python
-c.fonts.default_family = "Victor Mono"
+# c.fonts.default_family = "Victor Mono"
+c.fonts.default_family = "Fantasque Sans Mono"
 c.fonts.default_size = "11pt"
 c.fonts.web.family.cursive = "Victor Mono"
 c.fonts.web.family.fantasy= "Victor Mono"
 c.fonts.web.family.fixed = "Victor Mono"
 c.fonts.web.family.sans_serif = "Victor Mono"
+# c.fonts.web.family.sans_serif = "Recursive Sans Linear Static"
 c.fonts.web.family.serif = "Victor Mono"
-c.fonts.web.family.standard = "Victor Mono"
+# c.fonts.web.family.standard = "Victor Mono"
+c.fonts.web.family.standard = "Recursive Sans Linear Static"
 #+end_src
 
 ** keybindings
@@ -774,6 +782,7 @@ config.bind(',d', 'set colors.webpage.darkmode.enabled true')
 config.bind(',l', 'set colors.webpage.darkmode.enabled false')
 config.bind(',o', 'download-open')
 config.bind('tf', 'fullscreen')
+config.bind('a', 'tab-select')
 #+end_src
 
 ** TODO integration with org roam capture
@@ -816,13 +825,13 @@ config.bind("wo", "window-only", mode="normal")
 (setf winner-mode:*tmp-folder*
       (merge-pathnames #p"tmp/" (user-homedir-pathname)))
 ;; (add-hook *post-command-hook* (lambda (command)
-                                ;; (when (member command winner-mode:*default-commands*)
-                                  ;; (winner-mode:dump-group-to-file))))
+				;; (when (member command winner-mode:*default-commands*)
+				  ;; (winner-mode:dump-group-to-file))))
 ;; (setf *post-command-hook* nil)
 
-(defparameter xft:+font-cache-filename+ 
+(defparameter xft:+font-cache-filename+
   #.(merge-pathnames "font-cache.sexp"
-                     (merge-pathnames ".fonts/" (user-homedir-pathname))))
+		     (merge-pathnames ".fonts/" (user-homedir-pathname))))
 (defparameter xft:*font-dirs*
   (list #.(merge-pathnames ".guix-profile/share/fonts/truetype/" (user-homedir-pathname))))
 
@@ -830,7 +839,7 @@ config.bind("wo", "window-only", mode="normal")
 (set-font (make-instance 'xft:font :family "Fantasque Sans Mono" :subfamily "Regular" :size 24))
 
 (defcommand reset-font () ()
-  (set-font (make-instance 'xft:font :family "Fantasque Sans Mono" :subfamily "Regular" :size 24))) 
+  (set-font (make-instance 'xft:font :family "Fantasque Sans Mono" :subfamily "Regular" :size 24)))
 
 (defcommand emacs () ()
   (run-or-raise "emacs" '(:class "Emacs") nil))
@@ -869,7 +878,7 @@ config.bind("wo", "window-only", mode="normal")
 ;; join string: https://stackoverflow.com/questions/8830888/whats-the-canonical-way-to-join-strings-in-a-list
 (defun battery-string ()
   (let ((command "upower -i $(upower -e | grep BAT) | grep --color=never -E \"state|to\ full|to\ empty|percentage\""))
-    (format nil "~{~A~^ ~}" 
+    (format nil "~{~A~^ ~}"
 	  (remove-if (lambda (s) (= 0 (length s)))
 		     (cl-ppcre:split "\\s"
 				     (stumpwm:run-shell-command command t))))))
@@ -914,7 +923,8 @@ config.bind("wo", "window-only", mode="normal")
 *** specify pinentry program
 
 #+begin_src conf
-pinentry-program /home/nil/.guix-profile/bin/pinentry-gtk-2
+# pinentry-program /home/nil/.guix-profile/bin/pinentry-gtk-2
+allow-emacs-pinentry
 #+end_src
 
 *** pinentry-emacs
@@ -927,68 +937,68 @@ echo OK
 while read cmd rest
 do
     case $cmd in
-        SETDESC)
-            DESC=$rest
-            if [ ${DESC: -3} != '%0A' ]; then
-                DESC="$DESC%0A"
-            fi
-            echo OK
-        ;;
-        CONFIRM)
-            echo ASSUAN_Not_Confirmed
-        ;;
-        SETPROMPT)
-            PROMPT=$rest
-            echo OK
-        ;;
-        SETOK)
-            OK=$rest
-            echo OK
-        ;;
-        SETERROR)
-            ERROR=$rest
-            echo OK
-        ;;
-        GETPIN)
+	SETDESC)
+	    DESC=$rest
+	    if [ ${DESC: -3} != '%0A' ]; then
+		DESC="$DESC%0A"
+	    fi
+	    echo OK
+	;;
+	CONFIRM)
+	    echo ASSUAN_Not_Confirmed
+	;;
+	SETPROMPT)
+	    PROMPT=$rest
+	    echo OK
+	;;
+	SETOK)
+	    OK=$rest
+	    echo OK
+	;;
+	SETERROR)
+	    ERROR=$rest
+	    echo OK
+	;;
+	GETPIN)
 
-            RES=$(emacsclient -e "(pinentry-emacs \"$DESC\" \"$PROMPT\" \"$OK\" \"$ERROR\")" | sed -e 's/^"//' -e 's/"$//')
-            if [ $? -ne 0 ]
-            then
-                RES=$(pinentry-gtk-2)
-            fi
-            echo D $RES
-            echo OK
-        ;;
-        OPTION)
-            echo OK
-        ;;
-        GETINFO)
-            case $rest in
-                pid*)
-                    echo D $$
-                    echo OK
-                    ;;
-                version)
-                    echo D 1.0.0
-                    echo OK
-                    ;;
-                flavor*)
-                    echo D curses:curses
-                    echo OK
-                    ;;
-                ttyinfo*)
-                    echo "D - - -"
-                    echo OK
-                    ;;
-            esac
-        ;;
-        BYE)
-            echo OK
-            exit
-        ;;
-        ,*)
-            echo OK
-        ;;
+	    RES=$(emacsclient -e "(pinentry-emacs \"$DESC\" \"$PROMPT\" \"$OK\" \"$ERROR\")" | sed -e 's/^"//' -e 's/"$//')
+	    if [ $? -ne 0 ]
+	    then
+		RES=$(pinentry-gtk-2)
+	    fi
+	    echo D $RES
+	    echo OK
+	;;
+	OPTION)
+	    echo OK
+	;;
+	GETINFO)
+	    case $rest in
+		pid*)
+		    echo D $$
+		    echo OK
+		    ;;
+		version)
+		    echo D 1.0.0
+		    echo OK
+		    ;;
+		flavor*)
+		    echo D curses:curses
+		    echo OK
+		    ;;
+		ttyinfo*)
+		    echo "D - - -"
+		    echo OK
+		    ;;
+	    esac
+	;;
+	BYE)
+	    echo OK
+	    exit
+	;;
+	,*)
+	    echo OK
+	;;
     esac
 done
 #+end_src
@@ -1014,9 +1024,9 @@ done
 #+begin_src lisp
 (define-configuration nyxt/proxy-mode:proxy-mode
   ((nyxt/proxy-mode:proxy (make-instance 'proxy
-                                         :url (quri:uri "http://127.0.0.1:7890")
-                                         :allowlist '("localhost" "localhost:8080")
-                                         :proxied-downloads-p t))))
+					 :url (quri:uri "http://127.0.0.1:7890")
+					 :allowlist '("localhost" "localhost:8080")
+					 :proxied-downloads-p t))))
 
 (define-configuration web-buffer
   ((default-modes (append '(proxy-mode) %slot-default%))))
@@ -1102,16 +1112,18 @@ fi
 feh --bg-fill ~/Pictures/wallpaper/jaguar-956516.jpg
 
 # Enable screen compositing
-compton --config ~/.config/compton/compton.conf &
+# compton --config ~/.config/compton/compton.conf &
+~/repos/picom/build/src/picom --experimental-backends --config ~/.config/compton/compton.conf --backend glx &
 
 # Fire it up
 # exec dbus-launch emacs -mm --debug-init
 # exec guile-wm
- 
+
 ibus-daemon --xim --replace --daemonize &
 # exec --no-startup-id fcitx5 -d &
 # exec xmonad
-exec stumpwm
+# exec stumpwm
+exec i3
 #+end_src
 
 * xmonad
@@ -1142,7 +1154,7 @@ import XMonad.Actions.DynamicWorkspaceOrder as DO
 import XMonad.Actions.WindowGo(runOrRaise, runOrRaiseNext)
 import XMonad.Actions.PhysicalScreens(onPrevNeighbour, onNextNeighbour)
 import XMonad.Actions.WorkspaceNames(renameWorkspace, getCurrentWorkspaceName, getWorkspaceName)
-import XMonad.Actions.SwapWorkspaces(swapTo)  
+import XMonad.Actions.SwapWorkspaces(swapTo)
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.EwmhDesktops
 import Data.Maybe
@@ -1152,13 +1164,13 @@ import Data.Maybe
 ** IO monad
 
 #+begin_src haskell
-  
+
 main :: IO ()
 main = xmonad
        . ewmh
        =<< statusBar "xmobar" myXmobarPP toggleStructsKey
        myConfig
-  
+
   where
     toggleStructsKey :: XConfig Layout -> (KeyMask, KeySym)
     toggleStructsKey XConfig{ modMask = m } = (m, xK_b)
@@ -1167,8 +1179,8 @@ main = xmonad
 ** communicating with xmobar
 
 #+begin_src haskell
-  
--- https://xmonad.github.io/xmonad-docs/xmonad-contrib/XMonad-Hooks-DynamicLog.html#t:PP  
+
+-- https://xmonad.github.io/xmonad-docs/xmonad-contrib/XMonad-Hooks-DynamicLog.html#t:PP
 myXmobarPP :: PP
 myXmobarPP = def
   { ppSep = magenta " • "
@@ -1186,7 +1198,7 @@ myXmobarPP = def
 ** config
 
 #+begin_src haskell
-  
+
 myConfig = def
   { modMask = mod4Mask -- rebind Mod to the super key
   , terminal = "alacritty"
@@ -1228,18 +1240,18 @@ myConfig = def
 #+end_src
 
 ** TODO layouts and scratchpad
- 
+
 #+begin_src haskell
 myLayout =
   -- spacingRaw True (Border 0 25 25 25) True (Border 25 25 25 25) True
-           -- $ gaps [(U, 100), (R, 100), (L, 100), (D, 100)]
-           lessBorders Never
-           (
-             (hiddenWindows $ tiled)
-             ||| Full
-             -- ||| ThreeColMid 1 (3/100) (1/3)
-             -- ||| Circle
-           )
+	   -- $ gaps [(U, 100), (R, 100), (L, 100), (D, 100)]
+	   lessBorders Never
+	   (
+	     (hiddenWindows $ tiled)
+	     ||| Full
+	     -- ||| ThreeColMid 1 (3/100) (1/3)
+	     -- ||| Circle
+	   )
   where
     tiled   = Tall nmaster delta ratio
     nmaster = 1
@@ -1247,13 +1259,13 @@ myLayout =
     delta   = 3/100
 
 scratchpads = [ NS "default" "alacritty -t default"
-                (title =? "default")
-                (customFloating $ RationalRect (1 % 5) (1 % 5) (3 % 5) (3 % 5))
-              , NS "sketch" "~/scripts/spawnSketch.sh"
-                (title =? "sketch")
-                -- (customFloating $ RationalRect (1 % 5) (1 % 5) (3 % 5) (3 % 5))
-                (customFloating $ RationalRect (1 % 10) (1 % 10) (4 % 5) (4 % 5))
-              ]
+		(title =? "default")
+		(customFloating $ RationalRect (1 % 5) (1 % 5) (3 % 5) (3 % 5))
+	      , NS "sketch" "~/scripts/spawnSketch.sh"
+		(title =? "sketch")
+		-- (customFloating $ RationalRect (1 % 5) (1 % 5) (3 % 5) (3 % 5))
+		(customFloating $ RationalRect (1 % 10) (1 % 10) (4 % 5) (4 % 5))
+	      ]
 #+end_src
 
 * TODO xmobar
@@ -1281,33 +1293,33 @@ Config { font = "xft:victormono-10"
        , allDesktops = True
        , overrideRedirect = True
        , commands = [ Run Network "wlp0s20f3" ["-L","0","-H","32",
-                                          "--normal","green","--high","red"] 10
-                    , Run Cpu ["-L","3","-H","50",
-                               "--normal","green","--high","red"] 10
-                    , Run Memory ["-t","Mem: <usedratio>%"] 10
-                    -- , Run Swap [] 10
-                    , Run Com "uname" ["-s","-r"] "" 36000
-                    , Run Date "%a %b %_d %Y %H:%M:%S" "date" 10
-                    , Run StdinReader
-                    , Run Volume "default" "Master" [] 10
-                    , Run Battery [
-	                "-t", "<acstatus>: <left>% - <timeleft>",
-	                "--",
-	                --"-c", "charge_full",
-	                "-O", "AC",
-	                "-o", "Bat",
-	                "-h", "green",
-	                "-l", "red"
-                        ] 10
-                    , Run DiskU [("/", "<used>/<size>")]
-                      ["-L", "20", "-H", "50", "-m", "1", "-p", "3"]
-                      20
-                    , Run Kbd [("us(dvorak)", "DV"), ("us", "US")]
-                    ]
+					  "--normal","green","--high","red"] 10
+		    , Run Cpu ["-L","3","-H","50",
+			       "--normal","green","--high","red"] 10
+		    , Run Memory ["-t","Mem: <usedratio>%"] 10
+		    -- , Run Swap [] 10
+		    , Run Com "uname" ["-s","-r"] "" 36000
+		    , Run Date "%a %b %_d %Y %H:%M:%S" "date" 10
+		    , Run StdinReader
+		    , Run Volume "default" "Master" [] 10
+		    , Run Battery [
+			"-t", "<acstatus>: <left>% - <timeleft>",
+			"--",
+			--"-c", "charge_full",
+			"-O", "AC",
+			"-o", "Bat",
+			"-h", "green",
+			"-l", "red"
+			] 10
+		    , Run DiskU [("/", "<used>/<size>")]
+		      ["-L", "20", "-H", "50", "-m", "1", "-p", "3"]
+		      20
+		    , Run Kbd [("us(dvorak)", "DV"), ("us", "US")]
+		    ]
        , sepChar = "%"
        , alignSep = "}{"
        , template = "%StdinReader% } { %battery% | %disku% | %default:Master% | %cpu% | %memory% | %wlp0s20f3% |\
-                    \ <fc=#ee9a00>%date%</fc>"
+		    \ <fc=#ee9a00>%date%</fc>"
        }
 #+end_src
 
@@ -1322,7 +1334,7 @@ Config { font = "xft:victormono-10"
 unbind C-b
 set -g prefix m-j
 bind m-j send-prefix
-bind-key t set-option status	# toggle status bar
+# bind-key t set-option status	# toggle status bar
 #+end_src
 
 ** apperance
@@ -1348,4 +1360,27 @@ set -g mouse on
 
 #+begin_src sh :eval never
 set -g history-limit 9999
+#+end_src
+
+* telegram-desktop
+
+#+begin_src json :tangle ~/.local/share/TelegramDesktop/tdata/shortcuts-custom.json
+// This is a list of your own shortcuts for Telegram Desktop
+// You can see full list of commands in the 'shortcuts-default.json' file
+// Place a null value instead of a command string to switch the shortcut off
+
+[
+    {
+        "command": "next_chat",
+        "keys": "alt+n"
+    },
+    {
+        "command": "previous_chat",
+        "keys": "alt+p"
+    },
+    {
+	"command": "search",
+	"keys": "ctrl+s"
+    }
+]
 #+end_src

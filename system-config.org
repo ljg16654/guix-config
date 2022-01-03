@@ -132,7 +132,7 @@
 			 (mount-point "/")
 			 (type "ext4"))
 			(file-system
-			 (device "/dev/nvme1n1p2")
+			 (device "/dev/nvme0n1p2")
 			 (mount-point "/boot/efi")
 			 (type "vfat")))
 		  %base-file-systems)))
